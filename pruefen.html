@@ -52,6 +52,8 @@
     const ERWARTETE_THEMEN = ['Symbole', 'Schlüsselwörter', 'Funktionen', 'Methoden', 'Dateien & Daten', 'Fehler', 'Begriffe'];
     const ECHTER_KEY = PK ? PK.SPEICHER_KEY : 'python-karten-fortschritt-v1';
     const TEST_KEY = ECHTER_KEY + '-test';
+    const ECHTER_DESIGN_KEY = 'python-karten-design';
+    const TEST_DESIGN_KEY = ECHTER_DESIGN_KEY + '-test';
 
     const startKnopf = document.getElementById('start');
     const berichtKnopf = document.getElementById('bericht-kopieren');
@@ -194,7 +196,7 @@
     function regelnPruefen() {
       abschnitt('Regeln (logik.js)');
       const noetig = ['themen', 'kartenVon', 'leererStand', 'standLaden', 'standSichern', 'standLoeschen', 'eintrag', 'antwortBuchen', 'zaehlen',
-        'mischen', 'rundeZiehen', 'richtungWaehlen', 'aufgabeBauen', 'ergebnisText'];
+        'mischen', 'rundeZiehen', 'richtungWaehlen', 'aufgabeBauen', 'ergebnisText', 'zerlegen'];
       const fehlt = PK ? noetig.filter((n) => typeof PK[n] !== 'function') : noetig;
       pruefe(fehlt.length === 0, 'alle Funktionen sind da', fehlt.join(', '));
       if (fehlt.length > 0 || !Array.isArray(KARTEN)) return;
@@ -312,6 +314,51 @@
       pruefe(PK.standSichern(voll, st) === false, 'ein voller Speicher wirft keinen Fehler');
 
       pruefe(PK.ergebnisText(10, 10) === 'Alles richtig.' && PK.ergebnisText(0, 0) === '' && PK.ergebnisText(2, 10).length > 0, 'Ergebnistexte');
+
+      // Farben für Code (zerlegen)
+      const alleStuecke = (text) => {
+        const aus = [];
+        PK.zerlegen(text).forEach((zeile) => zeile.forEach((s) => aus.push(s)));
+        return aus;
+      };
+      const zusammen = (zeilen) => zeilen.map((z) => z.map((s) => s.s).join('')).join('\n');
+
+      const probe = 'def addiere(a, b):\n    if a == 3.5:  # Notiz\n        return print("x#y", f"{b}")\nclass Team:\n    pass';
+      const stuecke = alleStuecke(probe);
+      const erwartet = [['kw', 'def'], ['df', 'addiere'], ['kw', 'if'], ['op', '=='], ['nr', '3.5'], ['ko', '# Notiz'], ['kw', 'return'],
+        ['fn', 'print'], ['st', '"x#y"'], ['st', 'f"{b}"'], ['kw', 'class'], ['df', 'Team'], ['kw', 'pass']];
+      const nichtErkannt = erwartet.filter((e) => !stuecke.some((s) => s.t === e[0] && s.s === e[1])).map((e) => e[0] + ':' + e[1]);
+      pruefe(nichtErkannt.length === 0, 'Farben: Schlüsselwörter, Funktionen, Namen nach def und class, Zahlen, Texte und Kommentare werden erkannt', nichtErkannt.join(', '));
+
+      const imText = alleStuecke('print("x#y")');
+      const nachPunkt = alleStuecke('x.sum(y)');
+      pruefe(!imText.some((s) => s.t === 'ko') && !nachPunkt.some((s) => s.t === 'fn') && nachPunkt.some((s) => s.t === 'txt' && s.s === 'sum'),
+        'Farben: ein # im Text ist kein Kommentar, und ein Name nach dem Punkt ist keine eingebaute Funktion');
+
+      const mehrzeilig = PK.zerlegen('x = """a\nb"""');
+      pruefe(mehrzeilig.length === 2 && mehrzeilig[1].length === 1 && mehrzeilig[1][0].t === 'st' && mehrzeilig[1][0].s === 'b"""',
+        'Farben: ein Text über mehrere Zeilen bleibt in jeder Zeile ein Text', JSON.stringify(mehrzeilig[1]));
+
+      const verloren = [];
+      KARTEN.forEach((k) => {
+        [k.begriff, k.beispiel].forEach((text) => {
+          const zeilen = PK.zerlegen(text);
+          const leereStuecke = zeilen.some((z) => z.some((s) => s.s === ''));
+          if (zusammen(zeilen) !== text || leereStuecke || zeilen.length !== text.split('\n').length) verloren.push(k.id);
+        });
+      });
+      pruefe(verloren.length === 0, 'Farben: bei allen ' + KARTEN.length + ' Karten bleiben Begriff und Beispiel vollständig, in gleich vielen Zeilen', verloren.slice(0, 4).join(', '));
+
+      const wirr = ['print("offen', "x = '''a\nb", 'ä ö § \\ \t', '"""', '', 'a\n\nb', 'x = "a\\"b"', "'", '"', '#', '\n'];
+      const wirrFehler = wirr.filter((text) => {
+        try {
+          return zusammen(PK.zerlegen(text)) !== text;
+        } catch (fehler) {
+          return true;
+        }
+      });
+      const maskiert = alleStuecke('x = "a\\"b"').some((s) => s.t === 'st' && s.s === '"a\\"b"');
+      pruefe(wirrFehler.length === 0 && maskiert, 'Farben: auch halbe Anführungszeichen, Umlaute, leere Zeilen und ein maskiertes Anführungszeichen gehen nichts verloren', wirrFehler.join(' | '));
     }
 
     // ---------- Bedienung (die App im Rahmen) ----------
@@ -350,7 +397,9 @@
         return;
       }
       const echterVorher = speicher.getItem(ECHTER_KEY);
+      const echtesDesignVorher = speicher.getItem(ECHTER_DESIGN_KEY);
       speicher.removeItem(TEST_KEY);
+      speicher.removeItem(TEST_DESIGN_KEY);
 
       // Vorbereiteter Stand: fünf sichere Symbol-Karten
       const vorlage = PK.leererStand();
@@ -391,6 +440,8 @@
       pruefe(text('gesamt-anzahl') === String(KARTEN.length), 'Start: Gesamtzahl der Karten', text('gesamt-anzahl'));
       pruefe(text('gesamt-sicher') === '5', 'Start: der vorbereitete Stand (5 sichere Karten) wird geladen', text('gesamt-sicher'));
       pruefe(/^5 von \d+ sicher$/.test(themaKnopf('Symbole').querySelector('.thema-zahl').textContent), 'Start: Themenknopf zeigt "5 von … sicher"', themaKnopf('Symbole').querySelector('.thema-zahl').textContent);
+      pruefe(text('tab-name') === 'start.py' && doc.body.getAttribute('data-ansicht') === 'start' && text('status-karten') === 'sicher : 5 / ' + KARTEN.length,
+        'Oberfläche: Tab "start.py" und Statusleiste "sicher : 5 / ' + KARTEN.length + '"', text('tab-name') + ' | ' + text('status-karten'));
       speicher.removeItem(TEST_KEY);
       await rahmenLaden('index.html?test=1');
       rahmenUebernehmen();
@@ -405,6 +456,7 @@
       // Quiz
       el('quiz-starten').click();
       await bis(() => sichtbar('quiz'), 'das Quiz');
+      pruefe(text('tab-name') === 'quiz.py' && doc.body.getAttribute('data-ansicht') === 'quiz', 'Oberfläche: im Quiz heißt der Tab "quiz.py"', text('tab-name'));
       pruefe(text('quiz-fortschritt') === 'Frage 1 von 10', 'Quiz: erste Frage "Frage 1 von 10"', text('quiz-fortschritt'));
       pruefe(knoepfe('#quiz-antworten .antwort').length === 4, 'Quiz: vier Antworten', knoepfe('#quiz-antworten .antwort').length);
       pruefe(text('quiz-thema').indexOf('Symbole') === 0 && text('quiz-frage').length > 5 && text('quiz-anzeige').length > 0, 'Quiz: Thema, Frage und Anzeige sind gefüllt');
@@ -416,6 +468,11 @@
       const titel = text('quiz-titel');
       pruefe(titel === 'Richtig!' || titel === 'Nicht ganz.', 'Quiz: Rückmeldung "Richtig!" oder "Nicht ganz."', titel);
       pruefe(text('quiz-loesung-begriff').length > 0 && text('quiz-loesung-bedeutung').length > 0, 'Quiz: die Lösung (Begriff und Bedeutung) steht da');
+      const geloest = KARTEN.filter((k) => k.kat === 'Symbole' && k.begriff === text('quiz-loesung-begriff'))[0];
+      const sollZeilen = geloest && geloest.beispiel ? geloest.beispiel.split('\n').length : 0;
+      pruefe(!!geloest && sichtbar('quiz-beispiel') === (sollZeilen > 0) && knoepfe('#quiz-beispiel .zeile').length === sollZeilen && text('quiz-beispiel') === geloest.beispiel,
+        'Quiz: das Beispiel steht Zeile für Zeile da (die Nummern kommen aus dem Aussehen) und der Text bleibt vollständig',
+        (geloest ? geloest.id : 'Karte nicht gefunden') + ': ' + knoepfe('#quiz-beispiel .zeile').length + ' Zeilen, soll ' + sollZeilen);
       const falschVorher = knoepfe('#quiz-antworten .falsch').length;
       knoepfe('#quiz-antworten .antwort')[3].click();
       pruefe(knoepfe('#quiz-antworten .falsch').length === falschVorher, 'Quiz: eine zweite Antwort auf dieselbe Frage zählt nicht');
@@ -503,9 +560,35 @@
       el('zuruecksetzen').click();
       pruefe(speicher.getItem(TEST_KEY) === null && text('gesamt-sicher') === '0', 'Zurücksetzen löscht den Fortschritt');
 
+      // Menü, Tab und Design
+      el('menue-suchen').click();
+      await bis(() => sichtbar('nachschlagen'), 'Nachschlagen über das Menü');
+      const tabSuchen = text('tab-name');
+      el('menue-datei').click();
+      await bis(() => sichtbar('start'), 'Start über das Menü');
+      el('menue-ausfuehren').click();
+      await bis(() => sichtbar('quiz'), 'das Quiz über das Menü');
+      const quizOffen = text('quiz-fortschritt');
+      el('menue-datei').click();
+      await bis(() => sichtbar('start'), 'Start nach dem Quiz über das Menü');
+      pruefe(tabSuchen === 'nachschlagen.py' && quizOffen === 'Frage 1 von 10',
+        'Menü: Suchen öffnet Nachschlagen, Datei führt zum Start, Ausführen startet ein Quiz', tabSuchen + ' | ' + quizOffen);
+
+      const wurzel = doc.documentElement;
+      el('design-knopf').click();
+      const design1 = wurzel.getAttribute('data-design');
+      el('menue-ansicht').click();
+      const design2 = wurzel.getAttribute('data-design');
+      el('design-knopf').click();
+      const design3 = wurzel.getAttribute('data-design');
+      const fest = (d) => d === 'hell' || d === 'dunkel';
+      pruefe(fest(design1) && fest(design2) && design1 !== design2 && design3 === null && speicher.getItem(TEST_DESIGN_KEY) === null,
+        'Design: drei Tipps wechseln zum Gegenteil des Geräts, zum Gleichen und zurück auf Auto', [design1, design2, design3].join(', '));
+
       pruefe(fehlerMeldungen.length === 0, 'Die App hat während des Tests keine Fehlermeldung ausgelöst', fehlerMeldungen.join(' | '));
-      pruefe(speicher.getItem(ECHTER_KEY) === echterVorher, 'Der echte Fortschritt wurde nicht angefasst');
+      pruefe(speicher.getItem(ECHTER_KEY) === echterVorher && speicher.getItem(ECHTER_DESIGN_KEY) === echtesDesignVorher, 'Der echte Fortschritt und das echte Design wurden nicht angefasst');
       speicher.removeItem(TEST_KEY);
+      speicher.removeItem(TEST_DESIGN_KEY);
     }
 
     // ---------- Ablauf ----------

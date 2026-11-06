@@ -228,6 +228,114 @@
     return 'Das braucht noch ein paar Runden. Die Karten unten kommen bald wieder.';
   }
 
+  // ---------- Farben für Code (wie im Editor) ----------
+
+  function mengeAus(woerter) {
+    const menge = Object.create(null);
+    woerter.split(' ').forEach((w) => { menge[w] = true; });
+    return menge;
+  }
+
+  const SCHLUESSELWOERTER = mengeAus('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield');
+  const EINGEBAUT = mengeAus('abs all any bool bytes chr dict dir enumerate filter float format frozenset getattr hasattr help id input int isinstance iter len list map max min next object open ord print range repr reversed round set setattr sorted str sum super tuple type zip');
+  const FEHLERART = /^[A-Z][A-Za-z]*(?:Error|Exception|Warning)$/;
+  const TEXT_VORSATZ = /^(?:[rRbBuUfF]|[rR][bBfF]|[bBfF][rR])$/;
+
+  // Wo ein Text in Anführungszeichen endet. pos zeigt auf das öffnende Zeichen.
+  // Ohne Ende reicht ein einfacher Text bis zum Zeilenende, einer mit drei Anführungszeichen bis zum Ende des Ganzen.
+  function textEnde(text, pos) {
+    const q = text.charAt(pos);
+    const n = text.length;
+    if (text.slice(pos, pos + 3) === q + q + q) {
+      const stop = text.indexOf(q + q + q, pos + 3);
+      return stop === -1 ? n : stop + 3;
+    }
+    let k = pos + 1;
+    while (k < n) {
+      const z = text.charAt(k);
+      if (z === '\\') {
+        k += 2;
+      } else if (z === q) {
+        return k + 1;
+      } else if (z === '\n') {
+        return k;
+      } else {
+        k += 1;
+      }
+    }
+    return n;
+  }
+
+  // Zerlegt Python-Text in Zeilen aus Stücken { t: Art, s: Text }. Daraus färbt die Seite den Code.
+  // Arten: kw Schlüsselwort, fn eingebaute Funktion oder Fehlerart, df Name nach def oder class, st Text in Anführungszeichen,
+  // nr Zahl, ko Kommentar, op Rechenzeichen, pu Klammer oder Satzzeichen, txt alles andere (auch Leerraum).
+  // Es geht nichts verloren: Alle Stücke einer Zeile ergeben zusammen genau diese Zeile, und es gibt so viele Zeilen wie im Text.
+  function zerlegen(text) {
+    const t = typeof text === 'string' ? text : '';
+    const stuecke = [];
+    // davor ist das letzte Wort oder Zeichen ohne Leerraum. Es entscheidet, ob ein Name nach "def" oder nach einem Punkt steht.
+    let davor = '';
+    function ein(art, s) {
+      const letztes = stuecke[stuecke.length - 1];
+      if (letztes && letztes.t === art) letztes.s += s;
+      else stuecke.push({ t: art, s: s });
+    }
+    const muster = /(\s+)|(#[^\n]*)|([A-Za-z_][A-Za-z0-9_]*)|(\d+(?:\.\d+)?)|("|')|(==|!=|<=|>=|\/\/=?|\*\*=?|[-+*\/%]=?|[<>=])|([()[\]{}:,.;])|([\s\S])/g;
+    let m;
+    while ((m = muster.exec(t)) !== null) {
+      if (m[1] !== undefined) {
+        ein('txt', m[1]);
+      } else if (m[2] !== undefined) {
+        ein('ko', m[2]);
+        davor = '#';
+      } else if (m[3] !== undefined) {
+        const wort = m[3];
+        const naechstes = t.charAt(muster.lastIndex);
+        if ((naechstes === '"' || naechstes === "'") && TEXT_VORSATZ.test(wort)) {
+          // f"..." oder r"...": der Buchstabe gehört zum Text
+          const ende = textEnde(t, muster.lastIndex);
+          ein('st', t.slice(m.index, ende));
+          muster.lastIndex = ende;
+          davor = '"';
+        } else {
+          let art = 'txt';
+          if (davor === '.') art = 'txt';
+          else if (davor === 'def' || davor === 'class') art = 'df';
+          else if (SCHLUESSELWOERTER[wort]) art = 'kw';
+          else if (EINGEBAUT[wort] || FEHLERART.test(wort)) art = 'fn';
+          ein(art, wort);
+          davor = wort;
+        }
+      } else if (m[4] !== undefined) {
+        ein('nr', m[4]);
+        davor = m[4];
+      } else if (m[5] !== undefined) {
+        const ende = textEnde(t, m.index);
+        ein('st', t.slice(m.index, ende));
+        muster.lastIndex = ende;
+        davor = '"';
+      } else if (m[6] !== undefined) {
+        ein('op', m[6]);
+        davor = m[6];
+      } else if (m[7] !== undefined) {
+        ein('pu', m[7]);
+        davor = m[7];
+      } else {
+        ein('txt', m[8]);
+        davor = m[8];
+      }
+    }
+    // In Zeilen teilen. Nur Leerraum und Text mit drei Anführungszeichen enthalten Zeilenumbrüche.
+    const zeilen = [[]];
+    stuecke.forEach((stueck) => {
+      stueck.s.split('\n').forEach((teil, i) => {
+        if (i > 0) zeilen.push([]);
+        if (teil !== '') zeilen[zeilen.length - 1].push({ t: stueck.t, s: teil });
+      });
+    });
+    return zeilen;
+  }
+
   global.PK = {
     SPEICHER_KEY: SPEICHER_KEY,
     STUFE_SICHER: STUFE_SICHER,
@@ -248,6 +356,7 @@
     rundeZiehen: rundeZiehen,
     richtungWaehlen: richtungWaehlen,
     aufgabeBauen: aufgabeBauen,
-    ergebnisText: ergebnisText
+    ergebnisText: ergebnisText,
+    zerlegen: zerlegen
   };
 })(window);

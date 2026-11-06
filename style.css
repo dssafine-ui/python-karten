@@ -1,232 +1,489 @@
-/* Python Karten: Aussehen. Handy zuerst, hell und dunkel folgen dem Gerät. */
+/* Python Karten: Aussehen wie ein Code-Editor, angelehnt an Notepad++.
+   Handy zuerst. Hell ist der Standard-Look mit weißer Schreibfläche, dunkel eine Farbwelt wie "Monokai".
+   Auto folgt dem Gerät. In der Statusleiste unten (und im Menü Ansicht) lässt sich Hell oder Dunkel fest wählen.
+   Die Farben des Codes heißen c-kw, c-fn und so weiter (siehe "Code-Farben"); logik.js (zerlegen) bestimmt, was welche Farbe bekommt.
+   Die dunklen Farben stehen zweimal da (Gerät dunkel und fest gewähltes Dunkel). Wer eine ändert, ändert beide. */
 
 :root {
-  --bg: #f2f6fb;
-  --karte: #ffffff;
-  --text: #14202e;
-  --leise: #566579;
-  --rand: #d2dbe7;
-  --akzent: #2b6cb0;
-  --akzent-hell: #e4eefa;
-  --haupt-bg: #2b6cb0;
+  color-scheme: light;
+  /* Flächen */
+  --aussen: #d4d4d4;
+  --bg: #ffffff;
+  --flaeche: #f0f0f0;
+  --chrome: #f0f0f0;
+  --tableiste: #e3e3e3;
+  --text: #141414;
+  --leise: #5a5a5a;
+  --rand: #adadad;
+  --trenner: #d9d9d9;
+  --auswahl: #add6ff;
+  /* Zeilennummern und aktive Zeile */
+  --rinne: #e4e4e4;
+  --rinne-rand: #c8c8c8;
+  --rinne-text: #666666;
+  --rinne-breite: 2.1rem;
+  --aktive-zeile: #e8e8ff;
+  /* Bedienung */
+  --akzent: #0078d7;
+  --akzent-hell: #cce8ff;
+  --knopf-bg: #e1e1e1;
+  --knopf-hover: #e5f1fb;
+  --knopf-druck: #cce4f7;
+  --haupt-bg: #0067b8;
+  --haupt-hover: #005a9e;
+  --haupt-druck: #004c87;
   --haupt-text: #ffffff;
-  --haupt-schatten: #1d4a78;
-  --gelb: #ffd43b;
-  --ok: #156f36;
-  --ok-bg: #ddf4e5;
+  --tab-balken: #ff8c00;
+  --fokus: #0078d7;
+  /* Rückmeldung */
+  --ok: #0b6b2a;
+  --ok-bg: #e3f4e6;
   --ok-rand: #2e9b57;
   --schlecht: #b3261e;
   --schlecht-bg: #fde8e6;
   --schlecht-rand: #d6453b;
-  --code-bg: #e9eff7;
-  --code-text: #10233a;
-  --fokus: #1b62e0;
-  --kopf-von: #3a7bbd;
-  --kopf-bis: #1d4a78;
-  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", "Liberation Mono", monospace;
+  /* Fortschrittsbalken */
+  --balken-bahn: #e6e6e6;
+  --balken-rand: #bcbcbc;
+  --balken-fuell: #06b025;
+  /* Code-Farben */
+  --code-text: #141414;
+  --c-kw: #0000ff;
+  --c-fn: #880088;
+  --c-df: #0b7285;
+  --c-st: #6e6e6e;
+  --c-nr: #b85400;
+  --c-ko: #008000;
+  --c-op: #141414;
+  --c-pu: #141414;
+  --op-gewicht: 700;
+  --mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Roboto Mono", ui-monospace, "Liberation Mono", monospace;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1520;
-    --karte: #162130;
-    --text: #e7eef7;
-    --leise: #9cb0c6;
-    --rand: #2a394c;
-    --akzent: #6aaaf0;
-    --akzent-hell: #1b3050;
-    --haupt-bg: #5ba3ee;
-    --haupt-text: #07182b;
-    --haupt-schatten: #3b78b8;
-    --ok: #67d391;
-    --ok-bg: #123322;
-    --ok-rand: #3aa86a;
-    --schlecht: #ff9086;
-    --schlecht-bg: #3c1c19;
-    --schlecht-rand: #e0594d;
-    --code-bg: #0a111a;
-    --code-text: #dce8f6;
-    --fokus: #8cc0ff;
-    --kopf-von: #1f4f82;
-    --kopf-bis: #12263d;
+  :root:not([data-design="hell"]) {
+    color-scheme: dark;
+    --aussen: #161712;
+    --bg: #272822;
+    --flaeche: #34352d;
+    --chrome: #2d2d2d;
+    --tableiste: #222320;
+    --text: #f8f8f2;
+    --leise: #b8b8aa;
+    --rand: #66675c;
+    --trenner: #44453d;
+    --auswahl: #49483e;
+    --rinne: #2f302a;
+    --rinne-rand: #44453d;
+    --rinne-text: #a3a396;
+    --aktive-zeile: #3e3d32;
+    --akzent: #66d9ef;
+    --akzent-hell: #2f4a52;
+    --knopf-bg: #3b3c35;
+    --knopf-hover: #46473f;
+    --knopf-druck: #54554b;
+    --haupt-bg: #0e639c;
+    --haupt-hover: #1177bb;
+    --haupt-druck: #0a4f7d;
+    --haupt-text: #ffffff;
+    --fokus: #66d9ef;
+    --ok: #a6e22e;
+    --ok-bg: #26331a;
+    --ok-rand: #6aa31f;
+    --schlecht: #ff8fae;
+    --schlecht-bg: #3d1f29;
+    --schlecht-rand: #e0426f;
+    --balken-bahn: #1c1d18;
+    --balken-rand: #4d4e44;
+    --balken-fuell: #4fb04a;
+    --code-text: #f8f8f2;
+    --c-kw: #ff5a93;
+    --c-fn: #66d9ef;
+    --c-df: #a6e22e;
+    --c-st: #e6db74;
+    --c-nr: #ae81ff;
+    --c-ko: #a3a07f;
+    --c-op: #ff5a93;
+    --c-pu: #f8f8f2;
+    --op-gewicht: 400;
   }
 }
 
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+:root[data-design="dunkel"] {
+  color-scheme: dark;
+  --aussen: #161712;
+  --bg: #272822;
+  --flaeche: #34352d;
+  --chrome: #2d2d2d;
+  --tableiste: #222320;
+  --text: #f8f8f2;
+  --leise: #b8b8aa;
+  --rand: #66675c;
+  --trenner: #44453d;
+  --auswahl: #49483e;
+  --rinne: #2f302a;
+  --rinne-rand: #44453d;
+  --rinne-text: #a3a396;
+  --aktive-zeile: #3e3d32;
+  --akzent: #66d9ef;
+  --akzent-hell: #2f4a52;
+  --knopf-bg: #3b3c35;
+  --knopf-hover: #46473f;
+  --knopf-druck: #54554b;
+  --haupt-bg: #0e639c;
+  --haupt-hover: #1177bb;
+  --haupt-druck: #0a4f7d;
+  --haupt-text: #ffffff;
+  --fokus: #66d9ef;
+  --ok: #a6e22e;
+  --ok-bg: #26331a;
+  --ok-rand: #6aa31f;
+  --schlecht: #ff8fae;
+  --schlecht-bg: #3d1f29;
+  --schlecht-rand: #e0426f;
+  --balken-bahn: #1c1d18;
+  --balken-rand: #4d4e44;
+  --balken-fuell: #4fb04a;
+  --code-text: #f8f8f2;
+  --c-kw: #ff5a93;
+  --c-fn: #66d9ef;
+  --c-df: #a6e22e;
+  --c-st: #e6db74;
+  --c-nr: #ae81ff;
+  --c-ko: #a3a07f;
+  --c-op: #ff5a93;
+  --c-pu: #f8f8f2;
+  --op-gewicht: 400;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 5.5rem; scroll-padding-bottom: 3.5rem; }
 [hidden] { display: none !important; }
+::selection { background: var(--auswahl); }
 
 body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
   color: var(--text);
-  background: var(--bg);
-  font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--aussen);
+  font: 16px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
 }
 
 button, input, select { font: inherit; color: inherit; }
 code, pre { font-family: var(--mono); }
-:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--fokus); outline-offset: 2px; }
 
-/* ---------- Kopf ---------- */
+/* ---------- Fenster, Menü, Tab und Statusleiste ---------- */
 
-.kopf {
-  padding: max(0.9rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.9rem max(1rem, env(safe-area-inset-left));
-  color: #ffffff;
-  background: linear-gradient(135deg, var(--kopf-von), var(--kopf-bis));
+.fenster {
+  display: flex;
+  flex-direction: column;
+  max-width: 40rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg);
 }
-.kopf-inhalt { display: flex; align-items: center; gap: 0.8rem; max-width: 34rem; margin: 0 auto; }
-.logo { flex: none; width: 44px; height: 44px; border-radius: 11px; }
-.kopf h1 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: 0.01em; }
-.kopf h1 span { color: var(--gelb); }
-.untertitel { margin: 0.15rem 0 0; font-size: 0.9rem; opacity: 0.9; }
+@media (min-width: 41rem) {
+  .fenster { border-left: 1px solid var(--rand); border-right: 1px solid var(--rand); }
+}
+
+.kopf { position: sticky; top: 0; z-index: 10; background: var(--chrome); }
+
+.menue {
+  display: flex;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  border-bottom: 1px solid var(--trenner);
+}
+.menue-punkt {
+  min-height: 2.6rem;
+  padding: 0 0.85rem;
+  font-size: 0.95rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+.menue-punkt:active { background: var(--akzent-hell); }
+@media (hover: hover) {
+  .menue-punkt:hover { background: var(--akzent-hell); }
+}
+
+.tabs { display: flex; align-items: flex-end; padding: 0.3rem 0.5rem 0; background: var(--tableiste); border-bottom: 1px solid var(--rand); }
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  margin-bottom: -1px;
+  padding: 0.3rem 0.7rem 0.35rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  background: var(--bg);
+  border: 1px solid var(--rand);
+  border-top: 3px solid var(--tab-balken);
+  border-bottom-color: var(--bg);
+}
+.tab-disk { flex: none; }
+.tab-x { font-size: 1.05rem; line-height: 1; color: var(--leise); }
+
+.statuszeile {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  min-height: 2.2rem;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  font-size: 0.78rem;
+  background: var(--chrome);
+  border-top: 1px solid var(--rand);
+}
+.status-feld { display: flex; align-items: center; padding: 0 0.65rem; white-space: nowrap; border-right: 1px solid var(--trenner); }
+.status-breit { flex: 1; min-width: 0; }
+.status-knopf { flex: none; padding: 0 0.75rem; font-size: inherit; background: transparent; border: 0; border-radius: 0; cursor: pointer; }
+.status-knopf:active { background: var(--akzent-hell); }
+@media (hover: hover) {
+  .status-knopf:hover { background: var(--akzent-hell); }
+}
+@media (max-width: 25.99rem) {
+  .status-utf { display: none; }
+}
 
 main {
-  max-width: 34rem;
-  margin: 0 auto;
-  padding: 1rem max(1rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  flex: 1;
+  width: 100%;
+  padding: 0.9rem max(1rem, env(safe-area-inset-right)) 1.6rem max(1rem, env(safe-area-inset-left));
 }
 
 .mitte { text-align: center; color: var(--leise); }
 .leise { color: var(--leise); font-size: 0.9rem; }
 
+/* ---------- Zeilen mit Nummern (Titel, Beispiele, große Anzeige) ---------- */
+
+/* Der graue Streifen links läuft über die ganze Höhe, die Nummern stehen als Text darin. */
+.titelzeilen,
+.beispiel,
+.anzeige {
+  counter-reset: zeile;
+  background: linear-gradient(to right,
+    var(--rinne) 0, var(--rinne) calc(var(--rinne-breite) - 1px),
+    var(--rinne-rand) calc(var(--rinne-breite) - 1px), var(--rinne-rand) var(--rinne-breite),
+    var(--bg) var(--rinne-breite));
+}
+
+.zeile {
+  position: relative;
+  display: block;
+  min-height: 1.5em;
+  padding: 0 0.8rem 0 calc(var(--rinne-breite) + 0.7rem);
+  counter-increment: zeile;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.zeile::before {
+  content: counter(zeile);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--rinne-breite) - 1px);
+  padding-right: 0.45rem;
+  font: 400 0.78rem/1.7 var(--mono);
+  text-align: right;
+  color: var(--rinne-text);
+}
+
+/* Titelzeilen: die ersten zwei Zeilen der "Datei", nur auf dem Start sichtbar (sonst nur für Vorleseprogramme da) */
+.titelzeilen { padding: 0.2rem 0; border-bottom: 1px solid var(--trenner); }
+body:not([data-ansicht="start"]) .titelzeilen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+.titelzeilen .zeile { margin: 0; color: var(--c-ko); }
+.titelzeilen .zeile::before { bottom: 0; display: flex; align-items: center; justify-content: flex-end; line-height: 1; }
+h1.zeile { font: 700 1.15rem/1.5 var(--mono); }
+.untertitel { font: 400 0.88rem/1.5 var(--mono); }
+
+/* Beispielcode */
+.beispiel {
+  margin: 0.6rem 0;
+  overflow: hidden;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--code-text);
+  white-space: normal;
+  tab-size: 4;
+  border: 1px solid var(--rand);
+  border-radius: 3px;
+}
+.beispiel .zeile:first-child { padding-top: 0.4rem; }
+.beispiel .zeile:first-child::before { top: 0.4rem; }
+.beispiel .zeile:last-child { padding-bottom: 0.4rem; }
+
+/* Große Anzeige: eine Zeile, die gerade "aktiv" ist (wie die Zeile mit dem Cursor) */
+.anzeige {
+  margin: 0 0 1rem;
+  overflow: hidden;
+  white-space: normal;
+  border: 1px solid var(--rand);
+  border-radius: 3px;
+}
+.anzeige .zeile {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  background: linear-gradient(to right, transparent var(--rinne-breite), var(--aktive-zeile) var(--rinne-breite));
+}
+.anzeige .zeile::before { bottom: 0; display: flex; align-items: center; justify-content: flex-end; line-height: 1; }
+.anzeige.code .zeile {
+  font-family: var(--mono);
+  font-size: clamp(1.3rem, 6.2vw, 1.9rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--code-text);
+}
+.anzeige.text .zeile { font-size: 1.1rem; font-weight: 600; line-height: 1.4; }
+
+/* ---------- Code-Farben ---------- */
+
+.c-kw { font-weight: 700; color: var(--c-kw); }
+.c-fn { font-weight: 700; color: var(--c-fn); }
+.c-df { font-weight: 700; color: var(--c-df); }
+.c-st { color: var(--c-st); }
+.c-nr { color: var(--c-nr); }
+.c-ko { color: var(--c-ko); }
+.c-op { font-weight: var(--op-gewicht); color: var(--c-op); }
+.c-pu { font-weight: var(--op-gewicht); color: var(--c-pu); }
+
 /* ---------- Start ---------- */
 
-.box { padding: 1rem; background: var(--karte); border: 1px solid var(--rand); border-radius: 16px; }
-.uebersicht-zahl { margin: 0 0 0.6rem; font-size: 1.1rem; }
-#gesamt-sicher { font-size: 2.2rem; font-weight: 800; line-height: 1; color: var(--akzent); }
+.box { padding: 0.9rem; background: var(--flaeche); border: 1px solid var(--rand); border-radius: 3px; }
+.uebersicht-zahl { margin: 0 0 0.6rem; font-size: 1.05rem; }
+#gesamt-sicher { font: 700 2rem/1 var(--mono); color: var(--c-nr); }
 .uebersicht-von { color: var(--leise); }
 .uebersicht .leise { margin: 0.6rem 0 0; }
 
-.balken { height: 10px; overflow: hidden; background: var(--code-bg); border-radius: 999px; }
-.balken > div { width: 0; height: 100%; background: var(--akzent); border-radius: 999px; transition: width 0.3s ease; }
+.balken { height: 0.85rem; overflow: hidden; background: var(--balken-bahn); border: 1px solid var(--balken-rand); }
+.balken > div { width: 0; height: 100%; background: var(--balken-fuell); transition: width 0.3s ease; }
 
-.abschnitt { margin: 1.4rem 0 0.6rem; font-size: 0.95rem; color: var(--leise); text-transform: uppercase; letter-spacing: 0.06em; }
+/* Kleine Überschriften sehen aus wie Kommentare im Code */
+.abschnitt { margin: 1.2rem 0 0.5rem; font: 400 0.85rem/1.4 var(--mono); color: var(--c-ko); }
+.abschnitt::before { content: "# "; content: "# " / ""; }
 
-.themen { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.2rem; }
+.themen { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
 .thema {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  min-height: 4.4rem;
-  padding: 0.65rem 0.8rem;
+  min-height: 4.3rem;
+  padding: 0.6rem 0.75rem;
   text-align: left;
-  background: var(--karte);
-  border: 2px solid var(--rand);
-  border-radius: 14px;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 3px;
   cursor: pointer;
 }
 .thema:first-child { grid-column: 1 / -1; }
-.thema[aria-pressed="true"] { background: var(--akzent-hell); border-color: var(--akzent); }
-.thema-name { font-weight: 700; }
-.thema-zahl { font-size: 0.82rem; color: var(--leise); }
-.mini-balken { display: block; height: 6px; margin-top: auto; overflow: hidden; background: var(--code-bg); border-radius: 999px; }
-.mini-balken > span { display: block; height: 100%; background: var(--akzent); border-radius: 999px; }
+.thema[aria-pressed="true"] { background: var(--akzent-hell); border-color: var(--akzent); box-shadow: inset 0 0 0 1px var(--akzent); }
+.thema-name { font-weight: 600; }
+.thema-zahl { font-size: 0.8rem; color: var(--leise); }
+.mini-balken { display: block; height: 0.45rem; margin-top: auto; overflow: hidden; background: var(--balken-bahn); border: 1px solid var(--balken-rand); }
+.mini-balken > span { display: block; height: 100%; background: var(--balken-fuell); }
 
 .haupt, .neben {
   display: block;
   width: 100%;
-  min-height: 3.3rem;
-  margin-top: 0.7rem;
-  padding: 0.7rem 1rem;
-  font-weight: 700;
+  min-height: 3.1rem;
+  margin-top: 0.6rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
   text-align: center;
-  border-radius: 14px;
+  border-radius: 3px;
   cursor: pointer;
 }
-.haupt { color: var(--haupt-text); background: var(--haupt-bg); border: 0; box-shadow: 0 3px 0 var(--haupt-schatten); }
-.haupt:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--haupt-schatten); }
-.neben { color: var(--akzent); background: transparent; border: 2px solid var(--akzent); }
-.klein { padding: 0.35rem 0.7rem; font-size: 0.9rem; color: var(--leise); background: transparent; border: 1px solid var(--rand); border-radius: 999px; cursor: pointer; }
-.pille { padding: 0.45rem 0.9rem; font-size: 0.95rem; font-weight: 600; color: var(--akzent); background: var(--akzent-hell); border: 0; border-radius: 999px; cursor: pointer; }
+.haupt { color: var(--haupt-text); background: var(--haupt-bg); border: 1px solid var(--haupt-bg); }
+.haupt:active { background: var(--haupt-druck); border-color: var(--haupt-druck); }
+.neben { background: var(--knopf-bg); border: 1px solid var(--rand); }
+.neben:active { background: var(--knopf-druck); border-color: var(--akzent); }
+.klein, .pille { padding: 0.4rem 0.8rem; font-size: 0.9rem; background: var(--knopf-bg); border: 1px solid var(--rand); border-radius: 3px; cursor: pointer; }
+.klein:active, .pille:active { background: var(--knopf-druck); border-color: var(--akzent); }
+@media (hover: hover) {
+  .haupt:hover { background: var(--haupt-hover); border-color: var(--haupt-hover); }
+  .neben:hover, .klein:hover, .pille:hover { background: var(--knopf-hover); border-color: var(--akzent); }
+}
 
-.info { margin-top: 1.4rem; padding: 0.7rem 1rem; background: var(--karte); border: 1px solid var(--rand); border-radius: 14px; }
+.info { margin-top: 1.2rem; padding: 0.6rem 0.9rem; background: var(--flaeche); border: 1px solid var(--rand); border-radius: 3px; }
 .info summary { cursor: pointer; font-weight: 600; }
 .info p { margin: 0.6rem 0 0; font-size: 0.95rem; }
 
-.fuss { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.4rem; font-size: 0.85rem; color: var(--leise); }
+.fuss { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.2rem; font-size: 0.85rem; color: var(--leise); }
 
 /* ---------- Quiz und Karteikarten ---------- */
 
-.kopfzeile { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.6rem; font-weight: 700; }
+.kopfzeile { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.6rem; font-weight: 600; }
 
-.kategorie { margin: 1rem 0 0.2rem; font-size: 0.8rem; font-weight: 700; color: var(--leise); text-transform: uppercase; letter-spacing: 0.06em; }
-.frage { margin: 0 0 0.7rem; font-size: 1.15rem; line-height: 1.3; }
+.kategorie { margin: 0.9rem 0 0.3rem; font: 400 0.85rem/1.4 var(--mono); color: var(--c-ko); }
+.kategorie::before { content: "# "; content: "# " / ""; }
+.frage { margin: 0 0 0.6rem; font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
 
-.anzeige {
-  margin: 0 0 1rem;
-  padding: 1rem;
-  text-align: center;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  background: var(--code-bg);
-  border-radius: 14px;
-}
-.anzeige.code { font-family: var(--mono); font-size: clamp(1.5rem, 7vw, 2.2rem); font-weight: 700; color: var(--code-text); }
-.anzeige.text { font-size: 1.3rem; font-weight: 600; line-height: 1.35; }
-
-.antworten { display: flex; flex-direction: column; gap: 0.6rem; }
+.antworten { display: flex; flex-direction: column; gap: 0.5rem; }
 .antwort {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: stretch;
   width: 100%;
-  min-height: 3.5rem;
-  padding: 0.7rem 0.9rem;
+  min-height: 3.4rem;
+  padding: 0;
+  overflow: hidden;
   text-align: left;
-  background: var(--karte);
-  border: 2px solid var(--rand);
-  border-radius: 14px;
+  background: var(--knopf-bg);
+  border: 1px solid var(--rand);
+  border-radius: 3px;
   cursor: pointer;
 }
 .antwort .buchstabe {
   flex: none;
   display: grid;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--leise);
-  border: 2px solid var(--rand);
-  border-radius: 50%;
+  width: 2.5rem;
+  font: 700 0.95rem var(--mono);
+  color: var(--rinne-text);
+  background: var(--rinne);
+  border-right: 1px solid var(--rinne-rand);
 }
-.antwort-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.antwort.code .antwort-text { font-family: var(--mono); font-size: 1rem; }
+.antwort-text { flex: 1; min-width: 0; align-self: center; padding: 0.6rem 0.8rem; overflow-wrap: anywhere; }
+.antwort.code .antwort-text { font-family: var(--mono); font-size: 0.98rem; }
 @media (hover: hover) {
-  .antwort:not(.gesperrt):hover { background: var(--akzent-hell); border-color: var(--akzent); }
+  .antwort:not(.gesperrt):hover { background: var(--knopf-hover); border-color: var(--akzent); }
 }
+.antwort:not(.gesperrt):active { background: var(--knopf-druck); }
 .antwort.gesperrt { cursor: default; }
 .antwort.richtig { color: var(--ok); background: var(--ok-bg); border-color: var(--ok-rand); }
 .antwort.falsch { color: var(--schlecht); background: var(--schlecht-bg); border-color: var(--schlecht-rand); }
 .antwort.blass { opacity: 0.55; }
-.antwort.richtig .buchstabe { color: var(--ok); border-color: var(--ok-rand); }
-.antwort.falsch .buchstabe { color: var(--schlecht); border-color: var(--schlecht-rand); }
+.antwort.richtig .buchstabe { color: var(--ok-bg); background: var(--ok); border-right-color: var(--ok); }
+.antwort.falsch .buchstabe { color: var(--schlecht-bg); background: var(--schlecht); border-right-color: var(--schlecht); }
 
-.rueckmeldung { margin-top: 1rem; padding: 1rem; background: var(--karte); border: 1px solid var(--rand); border-left: 6px solid var(--rand); border-radius: 14px; }
+.rueckmeldung { margin-top: 0.9rem; padding: 0.9rem; background: var(--flaeche); border: 1px solid var(--rand); border-left: 6px solid var(--rand); border-radius: 3px; }
 .rueckmeldung[data-ergebnis="richtig"] { border-left-color: var(--ok-rand); }
 .rueckmeldung[data-ergebnis="falsch"] { border-left-color: var(--schlecht-rand); }
-.rueckmeldung h3 { margin: 0 0 0.5rem; font-size: 1.2rem; outline: none; }
+.rueckmeldung h3 { margin: 0 0 0.5rem; font-size: 1.15rem; outline: none; }
 .rueckmeldung[data-ergebnis="richtig"] h3 { color: var(--ok); }
 .rueckmeldung[data-ergebnis="falsch"] h3 { color: var(--schlecht); }
 .loesung { margin: 0 0 0.6rem; overflow-wrap: anywhere; }
-.loesung code { padding: 0.1rem 0.4rem; font-weight: 700; background: var(--code-bg); border-radius: 6px; }
+.loesung code { padding: 0.1rem 0.4rem; font-weight: 700; background: var(--bg); border: 1px solid var(--trenner); border-radius: 3px; }
 
-.beispiel {
-  margin: 0.6rem 0;
-  padding: 0.7rem 0.8rem;
-  overflow-x: auto;
-  font-size: 0.92rem;
-  line-height: 1.4;
-  color: var(--code-text);
-  background: var(--code-bg);
-  border-radius: 10px;
-  tab-size: 4;
-}
-.hinweis { margin: 0.6rem 0; font-size: 0.95rem; color: var(--leise); }
+/* Merkhilfen sehen aus wie ein Hinweis unter dem Code */
+.hinweis { margin: 0.6rem 0; padding-left: 0.7rem; font-size: 0.95rem; color: var(--leise); border-left: 3px solid var(--c-ko); }
 
-.karteikarte { margin-top: 0.8rem; min-height: 15rem; padding: 1rem; background: var(--karte); border: 2px solid var(--rand); border-radius: 18px; cursor: pointer; }
+.karteikarte { margin-top: 0.8rem; min-height: 15rem; padding: 0.9rem; background: var(--flaeche); border: 1px solid var(--rand); border-radius: 3px; cursor: pointer; }
+.karteikarte .kategorie { margin-top: 0; }
 .karteikarte .anzeige { margin-top: 0.6rem; }
 .karte-bedeutung { margin: 0.4rem 0 0; font-size: 1.15rem; font-weight: 600; }
 #karte-hinten { outline: none; }
@@ -235,29 +492,46 @@ main {
 /* ---------- Ergebnis ---------- */
 
 .ergebnis-kopf { text-align: center; }
-.ergebnis-zahl { margin: 0.2rem 0 0.4rem; font-size: 2.2rem; font-weight: 800; color: var(--akzent); outline: none; }
+.ergebnis-zahl { margin: 0.2rem 0 0.4rem; font-size: 2rem; font-weight: 700; color: var(--akzent); outline: none; }
 .ergebnis-kopf p:last-child { margin-bottom: 0; }
 
 .liste { margin: 0; padding: 0; list-style: none; }
-.liste li { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.5rem; padding: 0.6rem 0.8rem; background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
+.liste li { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.4rem; padding: 0.55rem 0.75rem; background: var(--flaeche); border: 1px solid var(--rand); border-radius: 3px; }
 .liste code { font-weight: 700; overflow-wrap: anywhere; }
 .liste span { font-size: 0.95rem; color: var(--leise); }
 
 /* ---------- Nachschlagen ---------- */
 
-.feld { display: block; margin: 0.8rem 0 0.25rem; font-size: 0.85rem; font-weight: 700; color: var(--leise); }
-.eingabe { display: block; width: 100%; min-height: 3rem; padding: 0.55rem 0.8rem; background: var(--karte); border: 2px solid var(--rand); border-radius: 12px; }
+.feld { display: block; margin: 0.8rem 0 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--leise); }
+.eingabe { display: block; width: 100%; min-height: 2.9rem; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--rand); border-radius: 3px; }
+.eingabe:focus { border-color: var(--akzent); }
 
 .nachschlagen-liste { margin: 0.4rem 0 0; padding: 0; list-style: none; }
-.nachschlagen-liste li { margin-bottom: 0.5rem; }
-.nachschlagen-karte { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
-.nachschlagen-karte summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; padding: 0.65rem 0.8rem; cursor: pointer; list-style: none; }
+.nachschlagen-liste li { margin-bottom: 0.4rem; }
+.nachschlagen-karte { background: var(--flaeche); border: 1px solid var(--rand); border-radius: 3px; }
+.nachschlagen-karte summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; padding: 0.6rem 0.75rem; cursor: pointer; list-style: none; }
 .nachschlagen-karte summary::-webkit-details-marker { display: none; }
+/* Kästchen mit Plus oder Minus wie bei den Falt-Markierungen im Editor */
+.nachschlagen-karte summary::before {
+  content: "+";
+  flex: none;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  font: 700 0.85rem/1 var(--mono);
+  color: var(--leise);
+  background: var(--bg);
+  border: 1px solid var(--rand);
+}
+.nachschlagen-karte[open] summary::before { content: "\2212"; }
+.nachschlagen-karte[open] summary { border-bottom: 1px solid var(--trenner); }
 .nachschlagen-begriff { font-weight: 700; overflow-wrap: anywhere; }
 .nachschlagen-bedeutung { flex: 1 1 12rem; font-size: 0.95rem; color: var(--leise); }
-.nachschlagen-inhalt { padding: 0 0.8rem 0.8rem; }
+.nachschlagen-inhalt { padding: 0 0.75rem 0.75rem; }
 .nachschlagen-inhalt .kategorie { margin: 0.4rem 0 0; }
-.marke { padding: 0.05rem 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--ok); background: var(--ok-bg); border-radius: 999px; }
+.marke { padding: 0.05rem 0.45rem; font-size: 0.75rem; font-weight: 700; color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok-rand); border-radius: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

@@ -1,7 +1,7 @@
 // Service Worker: hält Python Karten auch ohne Netz bereit.
 // Erst das Netz fragen (damit neue Karten und App-Updates sofort ankommen), bei Funkloch den gespeicherten Stand zeigen.
 // Ändert sich eine Datei der App, die Zahl bei CACHE erhöhen, dann räumt der neue Service Worker die alte Kopie weg.
-const CACHE = 'python-karten-v1';
+const CACHE = 'python-karten-v2';
 // Ohne diese Dateien startet die App nicht: Fehlt eine, wird der neue Service Worker nicht installiert.
 const DATEIEN = ['./', 'index.html', 'style.css', 'karten.js', 'logik.js', 'app.js', 'manifest.json', 'icon.svg'];
 // So lange wartet die App aufs Netz, wenn sie eine gespeicherte Kopie hat. Ohne Kopie gibt es nichts anderes zu zeigen, dann gilt kein Limit.

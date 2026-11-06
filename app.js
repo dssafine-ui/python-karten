@@ -1,20 +1,34 @@
 // Python Karten: die Oberfläche.
-// Die Regeln (Fortschritt, Auswahl, Quizfragen) stehen in logik.js, die Karten in karten.js.
+// Die Regeln (Fortschritt, Auswahl, Quizfragen, Farben für Code) stehen in logik.js, die Karten in karten.js.
 (function () {
   'use strict';
 
   const APP_STAND = '06.11.2026';
   const ANSICHTEN = ['laden', 'start', 'quiz', 'karten', 'ergebnis', 'nachschlagen', 'fehler'];
+  // Name der "Datei" im Tab oben. Er zeigt, auf welcher Ansicht du gerade bist (wie im Editor).
+  const TAB_NAMEN = {
+    laden: 'laden.py',
+    start: 'start.py',
+    quiz: 'quiz.py',
+    karten: 'karteikarten.py',
+    ergebnis: 'ergebnis.py',
+    nachschlagen: 'nachschlagen.py',
+    fehler: 'fehler.py'
+  };
   // Tasten fürs Quiz am Rechner: 1 bis 4 oder A bis D
   const TASTEN = { '1': 0, '2': 1, '3': 2, '4': 3, a: 0, b: 1, c: 2, d: 3 };
 
   const $ = (id) => document.getElementById(id);
 
-  function zeige(name) {
+  function zeige(ansicht) {
     ANSICHTEN.forEach((id) => {
       const abschnitt = $(id);
-      if (abschnitt) abschnitt.hidden = id !== name;
+      if (abschnitt) abschnitt.hidden = id !== ansicht;
     });
+    // Das Aussehen hängt an der Ansicht (zum Beispiel zeigt nur der Start die Titelzeilen), und der Tab nennt sie wie eine Datei.
+    document.body.setAttribute('data-ansicht', ansicht);
+    const tab = $('tab-name');
+    if (tab) tab.textContent = TAB_NAMEN[ansicht] || 'python-karten.py';
     window.scrollTo(0, 0);
   }
 
@@ -40,12 +54,72 @@
   }
 
   const speicher = speicherHolen();
-  // Mit ?test=1 in der Adresse nutzt die App einen eigenen Speicher. So spielt pruefen.html sie durch, ohne deinen Fortschritt anzufassen.
-  const KEY = PK.SPEICHER_KEY + (/[?&]test=1(&|$)/.test(window.location.search) ? '-test' : '');
+  // Mit ?test=1 in der Adresse nutzt die App einen eigenen Speicher. So spielt pruefen.html sie durch, ohne deinen Fortschritt
+  // und dein Design anzufassen.
+  const TESTMODUS = /[?&]test=1(&|$)/.test(window.location.search);
+  const KEY = PK.SPEICHER_KEY + (TESTMODUS ? '-test' : '');
   let stand = PK.standLaden(speicher, KEY);
 
   function sichern() {
     PK.standSichern(speicher, stand, KEY);
+    statusAktualisieren();
+  }
+
+  // ---------- Design: Auto (folgt dem Gerät), Hell oder Dunkel ----------
+
+  const DESIGN_KEY = 'python-karten-design' + (TESTMODUS ? '-test' : '');
+  const DESIGN_NAMEN = { auto: 'Auto', hell: 'Hell', dunkel: 'Dunkel' };
+  // Farbe der Leiste, die das Gerät oben zeichnet (theme-color), wenn Hell oder Dunkel fest gewählt ist
+  const DESIGN_FARBEN = { hell: '#f0f0f0', dunkel: '#2d2d2d' };
+  let design = 'auto';
+  try {
+    const gewaehlt = speicher ? speicher.getItem(DESIGN_KEY) : null;
+    if (gewaehlt === 'hell' || gewaehlt === 'dunkel') design = gewaehlt;
+  } catch (fehler) {
+    design = 'auto';
+  }
+
+  function geraetIstDunkel() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+
+  function designAnwenden() {
+    const wurzel = document.documentElement;
+    if (design === 'auto') wurzel.removeAttribute('data-design');
+    else wurzel.setAttribute('data-design', design);
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+      if (!meta.dataset.auto) meta.dataset.auto = meta.getAttribute('content') || '';
+      meta.setAttribute('content', design === 'auto' ? meta.dataset.auto : DESIGN_FARBEN[design]);
+    });
+    const knopf = $('design-knopf');
+    if (knopf) {
+      knopf.textContent = 'Design : ' + DESIGN_NAMEN[design];
+      knopf.setAttribute('aria-label', 'Design wechseln, jetzt ' + DESIGN_NAMEN[design]);
+    }
+  }
+
+  // Der erste Tipp ändert immer sichtbar etwas: erst das Gegenteil vom Gerät, dann dasselbe wie das Gerät, dann wieder Auto.
+  function designWechseln() {
+    const gegenteil = geraetIstDunkel() ? 'hell' : 'dunkel';
+    const gleich = geraetIstDunkel() ? 'dunkel' : 'hell';
+    design = design === 'auto' ? gegenteil : design === gegenteil ? gleich : 'auto';
+    try {
+      if (speicher) {
+        if (design === 'auto') speicher.removeItem(DESIGN_KEY);
+        else speicher.setItem(DESIGN_KEY, design);
+      }
+    } catch (fehler) {
+      // Speichern geht nicht: Die Wahl gilt dann nur, bis die Seite neu geladen wird.
+    }
+    designAnwenden();
+  }
+
+  // Statusleiste unten: wie die Zeile im Editor, hier mit dem Gesamtstand
+  function statusAktualisieren() {
+    const feld = $('status-karten');
+    if (!feld) return;
+    const z = PK.zaehlen(stand, KARTEN);
+    feld.textContent = 'sicher : ' + z.sicher + ' / ' + z.gesamt;
   }
 
   // ---------- Kleine Helfer ----------
@@ -68,6 +142,40 @@
   // Zeigt den Text, oder versteckt das Element, wenn nichts da ist.
   function textSetzen(knoten, text) {
     knoten.textContent = text || '';
+    knoten.hidden = !text;
+  }
+
+  function ohneFarben(text) {
+    return text.split('\n').map((zeile) => (zeile ? [{ t: 'txt', s: zeile }] : []));
+  }
+
+  // Zeigt Text Zeile für Zeile wie in einem Editor. Die Zeilennummern kommen aus dem Aussehen (style.css), nicht aus dem Text:
+  // textContent ist danach genau der Text. art 'code' färbt Python (PK.zerlegen), art 'text' lässt den Text, wie er ist.
+  function zeilenSetzen(knoten, text, art) {
+    const inhalt = String(text === undefined || text === null ? '' : text);
+    let zeilen;
+    try {
+      zeilen = art === 'code' ? PK.zerlegen(inhalt) : ohneFarben(inhalt);
+    } catch (fehler) {
+      // Die Farben sind nur Zierde: Geht etwas schief, kommt der Text ohne Farben.
+      zeilen = ohneFarben(inhalt);
+    }
+    knoten.textContent = '';
+    zeilen.forEach((stuecke, i) => {
+      const zeile = el('span', 'zeile', '');
+      stuecke.forEach((stueck) => {
+        if (stueck.t === 'txt') zeile.appendChild(document.createTextNode(stueck.s));
+        else zeile.appendChild(el('span', 'c-' + stueck.t, stueck.s));
+      });
+      knoten.appendChild(zeile);
+      if (i < zeilen.length - 1) knoten.appendChild(document.createTextNode('\n'));
+    });
+  }
+
+  // Beispielcode mit Zeilennummern und Farben, oder versteckt, wenn es keinen gibt.
+  function beispielSetzen(knoten, text) {
+    if (text) zeilenSetzen(knoten, text, 'code');
+    else knoten.textContent = '';
     knoten.hidden = !text;
   }
 
@@ -123,6 +231,7 @@
     themenZeichnen();
     $('stand-zeile').textContent =
       'Stand ' + APP_STAND + ' · ' + KARTEN.length + ' Karten' + (speicher ? '' : ' · Fortschritt wird hier nicht gespeichert');
+    statusAktualisieren();
     zeige('start');
   }
 
@@ -161,8 +270,8 @@
     $('quiz-thema').textContent = karte.kat + (eintrag.wiederholung ? ' · Wiederholung' : '');
     $('quiz-frage').textContent = aufgabe.frage;
     const anzeige = $('quiz-anzeige');
-    anzeige.textContent = aufgabe.anzeige;
     anzeige.className = 'anzeige ' + (aufgabe.anzeigeCode ? 'code' : 'text');
+    zeilenSetzen(anzeige, aufgabe.anzeige, aufgabe.anzeigeCode ? 'code' : 'text');
     const box = $('quiz-antworten');
     box.textContent = '';
     aufgabe.optionen.forEach((option, i) => {
@@ -208,7 +317,7 @@
     $('quiz-titel').textContent = richtig ? 'Richtig!' : 'Nicht ganz.';
     $('quiz-loesung-begriff').textContent = karte.begriff;
     $('quiz-loesung-bedeutung').textContent = karte.bedeutung;
-    textSetzen($('quiz-beispiel'), karte.beispiel);
+    beispielSetzen($('quiz-beispiel'), karte.beispiel);
     textSetzen($('quiz-hinweis'), karte.hinweis);
     $('quiz-weiter').textContent = quiz.position + 1 < quiz.liste.length ? 'Weiter' : 'Ergebnis ansehen';
     box.hidden = false;
@@ -242,9 +351,9 @@
     $('karten-fortschritt').textContent = 'Karte ' + (kartenLauf.position + 1) + ' von ' + kartenLauf.liste.length;
     balkenSetzen('karten-balken', kartenLauf.position, kartenLauf.liste.length);
     $('karte-thema').textContent = karte.kat + (eintrag.wiederholung ? ' · Wiederholung' : '');
-    $('karte-vorne').textContent = karte.begriff;
+    zeilenSetzen($('karte-vorne'), karte.begriff, 'code');
     $('karte-bedeutung').textContent = karte.bedeutung;
-    textSetzen($('karte-beispiel'), karte.beispiel);
+    beispielSetzen($('karte-beispiel'), karte.beispiel);
     textSetzen($('karte-hinweis'), karte.hinweis);
     $('karte-hinten').hidden = true;
     $('karte-umdrehen').hidden = false;
@@ -324,7 +433,11 @@
       if (PK.eintrag(stand, karte.id).s >= PK.STUFE_SICHER) kopf.appendChild(el('span', 'marke', 'sicher'));
       details.appendChild(kopf);
       const inhalt = el('div', 'nachschlagen-inhalt', '');
-      if (karte.beispiel) inhalt.appendChild(el('pre', 'beispiel', karte.beispiel));
+      if (karte.beispiel) {
+        const beispiel = el('pre', 'beispiel', '');
+        zeilenSetzen(beispiel, karte.beispiel, 'code');
+        inhalt.appendChild(beispiel);
+      }
       if (karte.hinweis) inhalt.appendChild(el('p', 'hinweis', karte.hinweis));
       inhalt.appendChild(el('p', 'kategorie', karte.kat));
       details.appendChild(inhalt);
@@ -403,6 +516,17 @@
     startZeigen();
   });
 
+  // Menüleiste oben und Statusleiste unten. Sie sind Zierde mit Nutzen und fehlen nicht schlimm: Ohne sie läuft die App weiter.
+  function wennDa(id, tat) {
+    const knoten = $(id);
+    if (knoten) knoten.addEventListener('click', tat);
+  }
+  wennDa('menue-datei', startZeigen);
+  wennDa('menue-suchen', nachschlagenZeigen);
+  wennDa('menue-ansicht', designWechseln);
+  wennDa('menue-ausfuehren', quizStarten);
+  wennDa('design-knopf', designWechseln);
+
   // Am Rechner: im Quiz mit 1 bis 4 oder A bis D antworten, mit Enter weiter.
   document.addEventListener('keydown', (ereignis) => {
     if (ereignis.ctrlKey || ereignis.metaKey || ereignis.altKey) return;
@@ -425,6 +549,11 @@
     });
   }
 
+  try {
+    designAnwenden();
+  } catch (fehler) {
+    // Das Design ist nur Zierde: Geht etwas schief, läuft die App trotzdem.
+  }
   symbolFuerIphone();
   startZeigen();
 })();
