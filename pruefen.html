@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Python Karten: Selbsttest</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    body { max-width: 46rem; margin: 0 auto; padding: 1rem; font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #14202e; background: #f2f6fb; }
+    @media (prefers-color-scheme: dark) { body { color: #e7eef7; background: #0d1520; } }
+    h1 { margin: 0 0 0.6rem; font-size: 1.5rem; }
+    button { padding: 0.6rem 1.1rem; font: inherit; font-weight: 700; color: #ffffff; background: #2b6cb0; border: 0; border-radius: 12px; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    button.leise { color: inherit; background: transparent; border: 2px solid currentColor; }
+    #fazit { padding: 0.8rem 1rem; font-weight: 800; border-radius: 12px; }
+    #fazit.gut { color: #14532d; background: #dcfce7; }
+    #fazit.schlecht { color: #7f1d1d; background: #fee2e2; }
+    #status { min-height: 1.5rem; font-weight: 700; }
+    ol { margin: 1rem 0 0; padding: 0; list-style: none; }
+    li { margin-top: 0.2rem; padding: 0.25rem 0.6rem; overflow-wrap: anywhere; border-radius: 8px; }
+    li.kopf { margin-top: 0.9rem; padding-left: 0; font-weight: 800; }
+    li.ok { color: #14532d; background: #dcfce7; }
+    li.rot { color: #7f1d1d; background: #fee2e2; }
+    li.info { color: #5c3d00; background: #fff4c7; }
+    li small { display: block; opacity: 0.85; }
+    iframe { display: block; width: 100%; max-width: 26rem; height: 38rem; margin-top: 1.2rem; background: #ffffff; border: 2px solid #8fb0e8; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Python Karten: Selbsttest</h1>
+  <p>Der Test prüft die Karten, die Regeln und die Bedienung. Die Bedienung spielt er unten im Rahmen durch, mit einem eigenen Speicher (test).
+    Dein echter Fortschritt bleibt unberührt. Grün heißt: Die App hat sich so verhalten wie vorgesehen.</p>
+  <p>
+    <button id="start" type="button">Test starten</button>
+    <button id="bericht-kopieren" type="button" class="leise" hidden>Bericht kopieren</button>
+  </p>
+  <p id="status" aria-live="polite"></p>
+  <p id="fazit" hidden></p>
+  <ol id="ergebnisse"></ol>
+  <iframe id="app" title="Python Karten im Test"></iframe>
+
+  <script src="karten.js" charset="utf-8"></script>
+  <script src="logik.js" charset="utf-8"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    const PK = window.PK;
+    const KARTEN = window.KARTEN;
+    const ERWARTETE_THEMEN = ['Symbole', 'Schlüsselwörter', 'Funktionen', 'Methoden', 'Dateien & Daten', 'Fehler', 'Begriffe'];
+    const ECHTER_KEY = PK ? PK.SPEICHER_KEY : 'python-karten-fortschritt-v1';
+    const TEST_KEY = ECHTER_KEY + '-test';
+
+    const startKnopf = document.getElementById('start');
+    const berichtKnopf = document.getElementById('bericht-kopieren');
+    const statusZeile = document.getElementById('status');
+    const fazitZeile = document.getElementById('fazit');
+    const liste = document.getElementById('ergebnisse');
+    const rahmen = document.getElementById('app');
+
+    let gruen = 0;
+    let rot = 0;
+    let bericht = [];
+
+    // ---------- Hilfen ----------
+
+    function warte(ms) {
+      return new Promise((fertig) => setTimeout(fertig, ms));
+    }
+
+    // Wartet, bis die Bedingung stimmt. Nach maxMs bricht der Test mit einer Meldung ab.
+    async function bis(bedingung, was, maxMs) {
+      const ende = Date.now() + (maxMs || 6000);
+      for (;;) {
+        let ok = false;
+        try {
+          ok = !!bedingung();
+        } catch (fehler) {
+          ok = false;
+        }
+        if (ok) return;
+        if (Date.now() > ende) throw new Error('Zeit abgelaufen beim Warten auf: ' + was);
+        await warte(30);
+      }
+    }
+
+    function abschnitt(titel) {
+      statusZeile.textContent = 'Läuft: ' + titel;
+      const punkt = document.createElement('li');
+      punkt.className = 'kopf';
+      punkt.textContent = titel;
+      liste.appendChild(punkt);
+      bericht.push('');
+      bericht.push(titel);
+    }
+
+    function pruefe(ok, name, gefunden) {
+      const punkt = document.createElement('li');
+      punkt.className = ok ? 'ok' : 'rot';
+      punkt.textContent = (ok ? 'OK  ' : 'FEHLER  ') + name;
+      if (!ok && gefunden !== undefined) {
+        const klein = document.createElement('small');
+        klein.textContent = 'Gefunden: ' + gefunden;
+        punkt.appendChild(klein);
+      }
+      liste.appendChild(punkt);
+      if (ok) gruen += 1;
+      else rot += 1;
+      bericht.push((ok ? 'OK     ' : 'FEHLER ') + name + (!ok && gefunden !== undefined ? ' | gefunden: ' + gefunden : ''));
+    }
+
+    function hinweis(text) {
+      const punkt = document.createElement('li');
+      punkt.className = 'info';
+      punkt.textContent = text;
+      liste.appendChild(punkt);
+      bericht.push('HINWEIS ' + text);
+    }
+
+    function doppelte(werte) {
+      const gesehen = Object.create(null);
+      const doppelt = [];
+      werte.forEach((w) => {
+        if (gesehen[w]) doppelt.push(w);
+        gesehen[w] = true;
+      });
+      return doppelt;
+    }
+
+    function fakeSpeicher() {
+      const daten = Object.create(null);
+      return {
+        daten: daten,
+        getItem: (k) => (k in daten ? daten[k] : null),
+        setItem: (k, v) => { daten[k] = String(v); },
+        removeItem: (k) => { delete daten[k]; }
+      };
+    }
+
+    // ---------- Karten ----------
+
+    function kartenPruefen() {
+      abschnitt('Karten (karten.js)');
+      pruefe(Array.isArray(KARTEN) && KARTEN.length >= 150, 'mindestens 150 Karten', Array.isArray(KARTEN) ? KARTEN.length : 'kein Feld');
+      if (!Array.isArray(KARTEN)) return;
+
+      const felder = ['id', 'kat', 'begriff', 'bedeutung', 'beispiel', 'hinweis'];
+      const fehlend = [];
+      KARTEN.forEach((k, i) => {
+        felder.forEach((f) => {
+          if (typeof k[f] !== 'string') fehlend.push('Karte ' + (i + 1) + ': ' + f + ' fehlt');
+        });
+        ['id', 'kat', 'begriff', 'bedeutung'].forEach((f) => {
+          if (typeof k[f] === 'string' && k[f].trim() === '') fehlend.push('Karte ' + (i + 1) + ': ' + f + ' ist leer');
+        });
+      });
+      pruefe(fehlend.length === 0, 'alle sechs Felder sind Texte, id, kat, begriff und bedeutung nicht leer', fehlend.slice(0, 4).join('; '));
+
+      const ids = KARTEN.map((k) => k.id);
+      pruefe(doppelte(ids).length === 0, 'jede id nur einmal', doppelte(ids).slice(0, 4).join(', '));
+      const schlechteIds = ids.filter((id) => !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(id));
+      pruefe(schlechteIds.length === 0, 'ids nur aus Kleinbuchstaben, Ziffern und Bindestrichen', schlechteIds.slice(0, 4).join(', '));
+      const doppelteBedeutung = doppelte(KARTEN.map((k) => k.bedeutung));
+      pruefe(doppelteBedeutung.length === 0, 'jede bedeutung nur einmal (sonst gibt es im Quiz zwei richtige Antworten)', doppelteBedeutung.slice(0, 3).join(' | '));
+      const doppelteBegriffe = doppelte(KARTEN.map((k) => k.kat + ': ' + k.begriff));
+      pruefe(doppelteBegriffe.length === 0, 'jeder begriff nur einmal je Thema', doppelteBegriffe.slice(0, 3).join(' | '));
+
+      const zaehler = {};
+      KARTEN.forEach((k) => { zaehler[k.kat] = (zaehler[k.kat] || 0) + 1; });
+      const unbekannt = Object.keys(zaehler).filter((n) => ERWARTETE_THEMEN.indexOf(n) === -1);
+      pruefe(unbekannt.length === 0, 'nur die sieben bekannten Themen', unbekannt.join(', '));
+      const duenn = ERWARTETE_THEMEN.filter((n) => (zaehler[n] || 0) < 12);
+      pruefe(duenn.length === 0, 'jedes Thema hat mindestens 12 Karten', duenn.map((n) => n + ' ' + (zaehler[n] || 0)).join(', '));
+
+      const zuLang = [];
+      KARTEN.forEach((k) => {
+        if (k.bedeutung.length > 90) zuLang.push(k.id + ' bedeutung ' + k.bedeutung.length);
+        if (k.begriff.length > 40) zuLang.push(k.id + ' begriff ' + k.begriff.length);
+        if (k.hinweis.length > 230) zuLang.push(k.id + ' hinweis ' + k.hinweis.length);
+        if (k.beispiel.length > 260 || k.beispiel.split('\n').length > 7) zuLang.push(k.id + ' beispiel');
+      });
+      pruefe(zuLang.length === 0, 'Texte passen aufs Handy (bedeutung bis 90, begriff bis 40, hinweis bis 230 Zeichen, beispiel bis 7 Zeilen)', zuLang.slice(0, 4).join('; '));
+
+      const platzhalter = KARTEN.filter((k) => /TODO|XXX|\?\?\?|lorem ipsum/i.test(felder.map((f) => k[f]).join(' ')));
+      pruefe(platzhalter.length === 0, 'keine Platzhalter im Text', platzhalter.map((k) => k.id).slice(0, 4).join(', '));
+      const unsauber = KARTEN.filter((k) => /^\s|\s$|  /.test(k.begriff) || /^\s|\s$|  /.test(k.bedeutung) || /^\s|\s$/.test(k.hinweis));
+      pruefe(unsauber.length === 0, 'keine überflüssigen Leerzeichen in begriff, bedeutung und hinweis', unsauber.map((k) => k.id).slice(0, 4).join(', '));
+    }
+
+    // ---------- Regeln ----------
+
+    function regelnPruefen() {
+      abschnitt('Regeln (logik.js)');
+      const noetig = ['themen', 'kartenVon', 'leererStand', 'standLaden', 'standSichern', 'standLoeschen', 'eintrag', 'antwortBuchen', 'zaehlen',
+        'mischen', 'rundeZiehen', 'richtungWaehlen', 'aufgabeBauen', 'ergebnisText'];
+      const fehlt = PK ? noetig.filter((n) => typeof PK[n] !== 'function') : noetig;
+      pruefe(fehlt.length === 0, 'alle Funktionen sind da', fehlt.join(', '));
+      if (fehlt.length > 0 || !Array.isArray(KARTEN)) return;
+
+      // Themen
+      const themen = PK.themen(KARTEN);
+      pruefe(JSON.stringify(themen) === JSON.stringify(ERWARTETE_THEMEN), 'Themen in fester Reihenfolge', themen.join(', '));
+      pruefe(PK.kartenVon('Alle', KARTEN).length === KARTEN.length, 'Thema "Alle" liefert alle Karten', PK.kartenVon('Alle', KARTEN).length);
+      const symbole = PK.kartenVon('Symbole', KARTEN);
+      pruefe(symbole.length > 0 && symbole.every((k) => k.kat === 'Symbole'), 'Thema "Symbole" liefert nur Symbole', symbole.length);
+
+      // Quizfragen: jede Karte in beiden Richtungen, mehrfach (die falschen Antworten sind zufällig)
+      const probleme = [];
+      let anzahl = 0;
+      const katVonId = {};
+      KARTEN.forEach((k) => { katVonId[k.id] = k.kat; });
+      KARTEN.forEach((karte) => {
+        ['vor', 'zurueck'].forEach((richtung) => {
+          const feld = richtung === 'vor' ? 'bedeutung' : 'begriff';
+          for (let durchlauf = 0; durchlauf < 3; durchlauf += 1) {
+            anzahl += 1;
+            const a = PK.aufgabeBauen(karte, richtung, KARTEN);
+            const texte = a.optionen.map((o) => o.text);
+            const richtige = a.optionen.filter((o) => o.richtig);
+            const name = karte.id + ' (' + richtung + ')';
+            if (a.optionen.length !== 4) probleme.push(name + ': ' + a.optionen.length + ' Antworten');
+            else if (richtige.length !== 1 || richtige[0].id !== karte.id || richtige[0].text !== karte[feld]) probleme.push(name + ': die richtige Antwort stimmt nicht');
+            else if (texte.filter((t, i) => texte.indexOf(t) === i).length !== 4) probleme.push(name + ': zwei Antworten haben denselben Text');
+            else if (!a.optionen.every((o) => katVonId[o.id] === karte.kat)) probleme.push(name + ': falsche Antwort aus einem anderen Thema');
+            else if (!a.frage || a.anzeige !== (richtung === 'vor' ? karte.begriff : karte.bedeutung)) probleme.push(name + ': Frage oder Anzeige stimmt nicht');
+            else if (a.anzeigeCode !== (richtung === 'vor') || a.antwortCode !== (richtung === 'zurueck')) probleme.push(name + ': Schriftart-Kennzeichen stimmt nicht');
+          }
+        });
+      });
+      pruefe(probleme.length === 0, anzahl + ' gebaute Aufgaben: vier verschiedene Antworten, genau eine richtig, alle aus demselben Thema', probleme.slice(0, 3).join('; '));
+
+      const festA = JSON.stringify(PK.aufgabeBauen(KARTEN[5], 'vor', KARTEN, () => 0));
+      const festB = JSON.stringify(PK.aufgabeBauen(KARTEN[5], 'vor', KARTEN, () => 0));
+      pruefe(festA === festB, 'gleicher Zufall ergibt dieselbe Aufgabe');
+
+      const gemischt = PK.mischen(KARTEN, Math.random);
+      const gleicheMenge = gemischt.length === KARTEN.length && gemischt.map((k) => k.id).sort().join() === KARTEN.map((k) => k.id).sort().join();
+      pruefe(gleicheMenge, 'Mischen behält alle Karten');
+
+      // Auswahl einer Runde
+      const leer = PK.leererStand();
+      const runde = PK.rundeZiehen(KARTEN, leer, PK.RUNDE);
+      pruefe(runde.length === PK.RUNDE && doppelte(runde.map((k) => k.id)).length === 0, 'Runde: ' + PK.RUNDE + ' verschiedene Karten', runde.length);
+      const klein = PK.rundeZiehen(KARTEN.slice(0, 4), leer, PK.RUNDE);
+      pruefe(klein.length === 4, 'Runde aus nur 4 Karten hat 4 Karten', klein.length);
+      const erste = PK.rundeZiehen(KARTEN, leer, 10, () => 0).map((k) => k.id).join();
+      pruefe(erste === KARTEN.slice(0, 10).map((k) => k.id).join(), 'Runde mit Zufall 0 nimmt die ersten zehn Karten in Reihenfolge');
+
+      const gewichtet = PK.leererStand();
+      KARTEN.slice(0, 90).forEach((k) => { gewichtet.karten[k.id] = { s: 3, r: 3, f: 0, t: 1 }; });
+      const sicherIds = {};
+      KARTEN.slice(0, 90).forEach((k) => { sicherIds[k.id] = true; });
+      let neueKarten = 0;
+      let alleKarten = 0;
+      for (let i = 0; i < 300; i += 1) {
+        PK.rundeZiehen(KARTEN, gewichtet, 10).forEach((k) => {
+          alleKarten += 1;
+          if (!sicherIds[k.id]) neueKarten += 1;
+        });
+      }
+      const anteil = neueKarten / alleKarten;
+      pruefe(anteil > 0.65, 'Neue und unsichere Karten kommen deutlich öfter dran als sichere (Anteil ' + Math.round(anteil * 100) + ' Prozent, erwartet über 65)', Math.round(anteil * 100) + ' Prozent');
+
+      const richtungen = {
+        neu: PK.richtungWaehlen({ s: 0, r: 0, f: 0, t: 0 }, () => 0.9),
+        verfehlt: PK.richtungWaehlen({ s: 0, r: 1, f: 1, t: 1 }, () => 0.9),
+        bekanntA: PK.richtungWaehlen({ s: 2, r: 2, f: 0, t: 1 }, () => 0.1),
+        bekanntB: PK.richtungWaehlen({ s: 2, r: 2, f: 0, t: 1 }, () => 0.9)
+      };
+      pruefe(richtungen.neu === 'vor' && richtungen.verfehlt === 'vor' && richtungen.bekanntA === 'vor' && richtungen.bekanntB === 'zurueck',
+        'Richtung: neue und verfehlte Karten zuerst mit Begriff oben, bekannte auch andersherum', JSON.stringify(richtungen));
+
+      // Fortschritt
+      const st = PK.leererStand();
+      PK.eintrag(st, 'x');
+      pruefe(Object.keys(st.karten).length === 0, 'Nachsehen legt keinen Eintrag an');
+      const id = KARTEN[0].id;
+      PK.antwortBuchen(st, id, true, 1);
+      PK.antwortBuchen(st, id, true, 2);
+      const nachZwei = PK.zaehlen(st, KARTEN).sicher;
+      PK.antwortBuchen(st, id, true, 3);
+      const nachDrei = PK.zaehlen(st, KARTEN);
+      PK.antwortBuchen(st, id, true, 4);
+      const vierter = PK.eintrag(st, id).s;
+      pruefe(nachZwei === 0 && nachDrei.sicher === 1 && nachDrei.gesehen === 1 && vierter === PK.STUFE_SICHER,
+        'dreimal richtig ergibt "sicher", weitere Treffer gehen nicht darüber hinaus', JSON.stringify({ nachZwei: nachZwei, nachDrei: nachDrei, vierter: vierter }));
+      PK.antwortBuchen(st, id, false, 5);
+      const nachFehler = PK.eintrag(st, id);
+      pruefe(nachFehler.s === 0 && nachFehler.r === 4 && nachFehler.f === 1 && PK.zaehlen(st, KARTEN).sicher === 0,
+        'ein Fehler setzt die Karte auf Stufe 0 zurück und zählt richtig und falsch mit', JSON.stringify(nachFehler));
+
+      // Speichern und Laden
+      const sp = fakeSpeicher();
+      PK.antwortBuchen(st, KARTEN[1].id, true, 6);
+      st.thema = 'Fehler';
+      pruefe(PK.standSichern(sp, st, 'k') === true, 'Speichern meldet Erfolg');
+      const geladen = PK.standLaden(sp, 'k');
+      pruefe(JSON.stringify(geladen) === JSON.stringify(st), 'Laden gibt genau den gespeicherten Stand zurück');
+      sp.setItem('k', '{kaputt');
+      pruefe(JSON.stringify(PK.standLaden(sp, 'k')) === JSON.stringify(PK.leererStand()), 'kaputter Speicher ergibt einen leeren Stand');
+      sp.setItem('k', JSON.stringify({ v: 2, karten: {} }));
+      pruefe(JSON.stringify(PK.standLaden(sp, 'k')) === JSON.stringify(PK.leererStand()), 'unbekannte Version ergibt einen leeren Stand');
+      sp.setItem('k', JSON.stringify({ v: 1, thema: 'Alle', karten: { a: { s: 99, r: -5, f: 'x', t: null }, b: 7 } }));
+      const bereinigt = PK.standLaden(sp, 'k');
+      pruefe(bereinigt.karten.a && bereinigt.karten.a.s === PK.STUFE_SICHER && bereinigt.karten.a.r === 0 && bereinigt.karten.a.f === 0 && !bereinigt.karten.b,
+        'ungültige Zahlen werden in den erlaubten Bereich gezogen', JSON.stringify(bereinigt));
+      pruefe(PK.standLoeschen(sp, 'k') === true && sp.getItem('k') === null, 'Löschen entfernt den Stand');
+      pruefe(JSON.stringify(PK.standLaden(null)) === JSON.stringify(PK.leererStand()) && PK.standSichern(null, st) === false, 'ohne Speicher startet die App leer und Speichern meldet Misserfolg');
+      const voll = { getItem: () => null, setItem: () => { throw new Error('voll'); }, removeItem: () => {} };
+      pruefe(PK.standSichern(voll, st) === false, 'ein voller Speicher wirft keinen Fehler');
+
+      pruefe(PK.ergebnisText(10, 10) === 'Alles richtig.' && PK.ergebnisText(0, 0) === '' && PK.ergebnisText(2, 10).length > 0, 'Ergebnistexte');
+    }
+
+    // ---------- Bedienung (die App im Rahmen) ----------
+
+    function rahmenDokument() {
+      try {
+        return rahmen.contentDocument;
+      } catch (fehler) {
+        return null;
+      }
+    }
+
+    function rahmenLaden(adresse) {
+      return new Promise((fertig) => {
+        function einmal() {
+          rahmen.removeEventListener('load', einmal);
+          fertig();
+        }
+        rahmen.addEventListener('load', einmal);
+        rahmen.src = adresse;
+      });
+    }
+
+    async function bedienungPruefen() {
+      abschnitt('Bedienung (die App läuft unten im Rahmen mit)');
+      let speicher = null;
+      try {
+        speicher = window.localStorage;
+        speicher.setItem('python-karten-probe', '1');
+        speicher.removeItem('python-karten-probe');
+      } catch (fehler) {
+        speicher = null;
+      }
+      if (!speicher) {
+        hinweis('Übersprungen: Der Browser erlaubt hier keinen Speicher.');
+        return;
+      }
+      const echterVorher = speicher.getItem(ECHTER_KEY);
+      speicher.removeItem(TEST_KEY);
+
+      // Vorbereiteter Stand: fünf sichere Symbol-Karten
+      const vorlage = PK.leererStand();
+      PK.kartenVon('Symbole', KARTEN).slice(0, 5).forEach((k) => { vorlage.karten[k.id] = { s: PK.STUFE_SICHER, r: 3, f: 0, t: 1 }; });
+      speicher.setItem(TEST_KEY, JSON.stringify(vorlage));
+
+      // Nach jedem Laden des Rahmens gibt es ein neues Fenster mit neuem Dokument. Darum werden beide hier neu geholt;
+      // die kleinen Helfer unten lesen immer den aktuellen Stand. Die Rückfrage beim Zurücksetzen beantwortet der Test mit Ja.
+      let doc = null;
+      let fenster = null;
+      const fehlerMeldungen = [];
+      function rahmenUebernehmen() {
+        doc = rahmenDokument();
+        fenster = doc ? rahmen.contentWindow : null;
+        if (!fenster) return false;
+        fenster.confirm = () => true;
+        fenster.addEventListener('error', (e) => { fehlerMeldungen.push(e.message); });
+        return true;
+      }
+
+      await rahmenLaden('index.html?test=1');
+      if (!rahmenUebernehmen()) {
+        speicher.removeItem(TEST_KEY);
+        hinweis('Übersprungen: Der Browser erlaubt den Zugriff auf den Rahmen nicht (das passiert, wenn die Seite direkt von der Festplatte geöffnet wird). Auf der echten Adresse läuft dieser Teil.');
+        return;
+      }
+
+      const el = (id) => doc.getElementById(id);
+      const sichtbar = (id) => !el(id).hidden;
+      const text = (id) => el(id).textContent;
+      const knoepfe = (auswahl) => Array.prototype.slice.call(doc.querySelectorAll(auswahl));
+      const themaKnopf = (name) => knoepfe('#themen button').filter((k) => k.dataset.thema === name)[0];
+
+      await bis(() => sichtbar('start'), 'die Startseite');
+
+      // Start
+      pruefe(knoepfe('#themen button').length === 1 + ERWARTETE_THEMEN.length, 'Start: ein Knopf je Thema plus "Alle Themen"', knoepfe('#themen button').length);
+      pruefe(text('gesamt-anzahl') === String(KARTEN.length), 'Start: Gesamtzahl der Karten', text('gesamt-anzahl'));
+      pruefe(text('gesamt-sicher') === '5', 'Start: der vorbereitete Stand (5 sichere Karten) wird geladen', text('gesamt-sicher'));
+      pruefe(/^5 von \d+ sicher$/.test(themaKnopf('Symbole').querySelector('.thema-zahl').textContent), 'Start: Themenknopf zeigt "5 von … sicher"', themaKnopf('Symbole').querySelector('.thema-zahl').textContent);
+      speicher.removeItem(TEST_KEY);
+      await rahmenLaden('index.html?test=1');
+      rahmenUebernehmen();
+      await bis(() => sichtbar('start'), 'die Startseite nach dem Neuladen');
+      pruefe(text('gesamt-sicher') === '0', 'Start: ohne gespeicherten Stand steht dort 0', text('gesamt-sicher'));
+
+      // Thema wählen
+      themaKnopf('Symbole').click();
+      pruefe(themaKnopf('Symbole').getAttribute('aria-pressed') === 'true' && themaKnopf('Alle').getAttribute('aria-pressed') === 'false', 'Thema "Symbole" ist gewählt');
+      pruefe(JSON.parse(speicher.getItem(TEST_KEY)).thema === 'Symbole', 'die Themenwahl wird gespeichert');
+
+      // Quiz
+      el('quiz-starten').click();
+      await bis(() => sichtbar('quiz'), 'das Quiz');
+      pruefe(text('quiz-fortschritt') === 'Frage 1 von 10', 'Quiz: erste Frage "Frage 1 von 10"', text('quiz-fortschritt'));
+      pruefe(knoepfe('#quiz-antworten .antwort').length === 4, 'Quiz: vier Antworten', knoepfe('#quiz-antworten .antwort').length);
+      pruefe(text('quiz-thema').indexOf('Symbole') === 0 && text('quiz-frage').length > 5 && text('quiz-anzeige').length > 0, 'Quiz: Thema, Frage und Anzeige sind gefüllt');
+      pruefe(!sichtbar('quiz-rueckmeldung'), 'Quiz: vor der Antwort keine Rückmeldung');
+
+      knoepfe('#quiz-antworten .antwort')[0].click();
+      pruefe(sichtbar('quiz-rueckmeldung'), 'Quiz: nach der Antwort erscheint die Rückmeldung');
+      pruefe(knoepfe('#quiz-antworten .richtig').length === 1 && knoepfe('#quiz-antworten .gesperrt').length === 4, 'Quiz: genau eine Antwort grün, alle vier gesperrt');
+      const titel = text('quiz-titel');
+      pruefe(titel === 'Richtig!' || titel === 'Nicht ganz.', 'Quiz: Rückmeldung "Richtig!" oder "Nicht ganz."', titel);
+      pruefe(text('quiz-loesung-begriff').length > 0 && text('quiz-loesung-bedeutung').length > 0, 'Quiz: die Lösung (Begriff und Bedeutung) steht da');
+      const falschVorher = knoepfe('#quiz-antworten .falsch').length;
+      knoepfe('#quiz-antworten .antwort')[3].click();
+      pruefe(knoepfe('#quiz-antworten .falsch').length === falschVorher, 'Quiz: eine zweite Antwort auf dieselbe Frage zählt nicht');
+
+      let gestellt = 1;
+      for (let i = 0; i < 40; i += 1) {
+        el('quiz-weiter').click();
+        await warte(5);
+        if (!sichtbar('quiz')) break;
+        await bis(() => knoepfe('#quiz-antworten .antwort').length === 4 && !sichtbar('quiz-rueckmeldung'), 'die nächste Frage');
+        knoepfe('#quiz-antworten .antwort')[0].click();
+        gestellt += 1;
+      }
+      await bis(() => sichtbar('ergebnis'), 'das Ergebnis');
+      const treffer = /^(\d+) von 10 richtig$/.exec(text('ergebnis-zahl'));
+      pruefe(!!treffer, 'Ergebnis: "n von 10 richtig"', text('ergebnis-zahl'));
+      const richtig = treffer ? Number(treffer[1]) : -1;
+      pruefe(gestellt === 20 - richtig, 'Ergebnis: verfehlte Karten kommen am Ende noch einmal dran (' + gestellt + ' Fragen bei ' + richtig + ' richtig)', gestellt);
+      pruefe(knoepfe('#ergebnis-liste li').length === 10 - richtig, 'Ergebnis: die Liste zeigt genau die verfehlten Karten', knoepfe('#ergebnis-liste li').length);
+      pruefe(text('ergebnis-art').indexOf('Quiz') === 0 && text('ergebnis-art').indexOf('Symbole') !== -1, 'Ergebnis: Art und Thema', text('ergebnis-art'));
+      const gespeichert = JSON.parse(speicher.getItem(TEST_KEY));
+      const gespeicherteIds = Object.keys(gespeichert.karten);
+      pruefe(gespeicherteIds.length === 10 && gespeicherteIds.every((k) => k.indexOf('sym-') === 0 && gespeichert.karten[k].r + gespeichert.karten[k].f >= 1),
+        'Fortschritt: zehn Symbol-Karten mit mindestens einer Antwort gespeichert', gespeicherteIds.length);
+
+      // Noch eine Runde, dann Pause
+      el('ergebnis-nochmal').click();
+      await bis(() => sichtbar('quiz'), 'die zweite Runde');
+      pruefe(text('quiz-fortschritt') === 'Frage 1 von 10', 'Noch eine Runde startet ein neues Quiz');
+      el('quiz-pause').click();
+      await bis(() => sichtbar('start'), 'die Startseite nach der Pause');
+      pruefe(/^\d+$/.test(text('gesamt-sicher')), 'Pause führt zum Start zurück');
+
+      // Karteikarten
+      el('karten-starten').click();
+      await bis(() => sichtbar('karten'), 'die Karteikarten');
+      pruefe(text('karten-fortschritt') === 'Karte 1 von 10' && !sichtbar('karte-hinten') && sichtbar('karte-umdrehen') && !sichtbar('karte-bewertung'),
+        'Karteikarten: nur die Vorderseite, "Antwort zeigen" sichtbar', text('karten-fortschritt'));
+      pruefe(text('karte-vorne').length > 0 && text('karte-thema').indexOf('Symbole') === 0, 'Karteikarten: Vorderseite ist gefüllt');
+      el('karte-umdrehen').click();
+      pruefe(sichtbar('karte-hinten') && sichtbar('karte-bewertung') && !sichtbar('karte-umdrehen') && text('karte-bedeutung').length > 0, 'Karteikarten: umdrehen zeigt Bedeutung und die Knöpfe "Nochmal" und "Gewusst"');
+      el('karte-nochmal').click();
+      pruefe(text('karten-fortschritt') === 'Karte 2 von 11', 'Karteikarten: "Nochmal" hängt die Karte ans Ende', text('karten-fortschritt'));
+      el('karteikarte').click();
+      pruefe(sichtbar('karte-hinten') && sichtbar('karte-bewertung'), 'Karteikarten: ein Tipp auf die Karte dreht sie ebenfalls um');
+      // Rest der Runde mit "Gewusst" durchgehen
+      for (let i = 0; i < 40 && sichtbar('karten'); i += 1) {
+        if (!sichtbar('karte-hinten')) el('karte-umdrehen').click();
+        el('karte-gewusst').click();
+        await warte(5);
+      }
+      await bis(() => sichtbar('ergebnis'), 'das Ergebnis der Karteikarten');
+      pruefe(text('ergebnis-zahl') === '9 von 10 gewusst', 'Karteikarten-Ergebnis: 9 von 10 gewusst (eine Karte war "Nochmal")', text('ergebnis-zahl'));
+      pruefe(knoepfe('#ergebnis-liste li').length === 1 && sichtbar('ergebnis-liste-titel'), 'Karteikarten-Ergebnis: die eine verfehlte Karte steht in der Liste', knoepfe('#ergebnis-liste li').length);
+      el('ergebnis-start').click();
+      await bis(() => sichtbar('start'), 'Start nach den Karteikarten');
+
+      // Nachschlagen
+      el('nachschlagen-starten').click();
+      await bis(() => sichtbar('nachschlagen'), 'Nachschlagen');
+      pruefe(knoepfe('#suche-thema option').length === 1 + ERWARTETE_THEMEN.length, 'Nachschlagen: Themenauswahl', knoepfe('#suche-thema option').length);
+      pruefe(el('suche-thema').value === 'Symbole', 'Nachschlagen: das gewählte Thema ist vorgewählt', el('suche-thema').value);
+      el('suche-thema').value = 'Alle';
+      el('suche-thema').dispatchEvent(new fenster.Event('change'));
+      pruefe(knoepfe('#suche-liste li').length === KARTEN.length, 'Nachschlagen: ohne Suchwort alle Karten', knoepfe('#suche-liste li').length);
+      el('suche').value = 'split';
+      el('suche').dispatchEvent(new fenster.Event('input'));
+      const begriffe = knoepfe('#suche-liste .nachschlagen-begriff').map((b) => b.textContent);
+      pruefe(begriffe.indexOf('.split()') !== -1 && begriffe.length < KARTEN.length, 'Nachschlagen: Suche nach "split" findet .split()', begriffe.join(', '));
+      el('suche').value = 'zzzzqq';
+      el('suche').dispatchEvent(new fenster.Event('input'));
+      pruefe(knoepfe('#suche-liste li').length === 0 && text('suche-info') === 'Keine Karte gefunden.', 'Nachschlagen: Suche ohne Treffer', text('suche-info'));
+      el('suche').value = '';
+      el('suche-thema').value = 'Fehler';
+      el('suche-thema').dispatchEvent(new fenster.Event('change'));
+      const fehlerKarten = KARTEN.filter((k) => k.kat === 'Fehler').length;
+      pruefe(knoepfe('#suche-liste li').length === fehlerKarten, 'Nachschlagen: Thema "Fehler" zeigt alle Fehler-Karten', knoepfe('#suche-liste li').length);
+      const ersteKarte = doc.querySelector('#suche-liste details');
+      ersteKarte.querySelector('summary').click();
+      pruefe(ersteKarte.open === true, 'Nachschlagen: Antippen klappt die Karte auf');
+      el('nachschlagen-zurueck').click();
+      await bis(() => sichtbar('start'), 'Start nach dem Nachschlagen');
+
+      // Zurücksetzen
+      el('zuruecksetzen').click();
+      pruefe(speicher.getItem(TEST_KEY) === null && text('gesamt-sicher') === '0', 'Zurücksetzen löscht den Fortschritt');
+
+      pruefe(fehlerMeldungen.length === 0, 'Die App hat während des Tests keine Fehlermeldung ausgelöst', fehlerMeldungen.join(' | '));
+      pruefe(speicher.getItem(ECHTER_KEY) === echterVorher, 'Der echte Fortschritt wurde nicht angefasst');
+      speicher.removeItem(TEST_KEY);
+    }
+
+    // ---------- Ablauf ----------
+
+    async function laufen() {
+      startKnopf.disabled = true;
+      berichtKnopf.hidden = true;
+      fazitZeile.hidden = true;
+      liste.textContent = '';
+      gruen = 0;
+      rot = 0;
+      bericht = [];
+      try {
+        kartenPruefen();
+        if (PK) regelnPruefen();
+        else pruefe(false, 'logik.js wurde geladen');
+        if (PK && Array.isArray(KARTEN)) await bedienungPruefen();
+      } catch (fehler) {
+        pruefe(false, 'Der Test ist vorzeitig abgebrochen', fehler && fehler.message ? fehler.message : String(fehler));
+      }
+      statusZeile.textContent = 'Fertig.';
+      fazitZeile.hidden = false;
+      fazitZeile.className = rot === 0 ? 'gut' : 'schlecht';
+      fazitZeile.textContent = rot === 0 ? 'Alles grün: ' + gruen + ' Prüfungen bestanden.' : rot + ' Prüfung(en) rot, ' + gruen + ' grün. Die roten stehen unten.';
+      bericht.unshift(fazitZeile.textContent);
+      berichtKnopf.hidden = false;
+      startKnopf.disabled = false;
+    }
+
+    startKnopf.addEventListener('click', laufen);
+    berichtKnopf.addEventListener('click', () => {
+      const textBericht = 'Python Karten, Selbsttest\n' + bericht.join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textBericht).then(
+          () => { berichtKnopf.textContent = 'Kopiert'; },
+          () => { berichtKnopf.textContent = 'Kopieren nicht möglich'; }
+        );
+      } else {
+        berichtKnopf.textContent = 'Kopieren nicht möglich';
+      }
+    });
+    // Mit ?auto=1 in der Adresse startet der Test von allein.
+    if (/[?&]auto=1(&|$)/.test(window.location.search)) laufen();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Python Karten</title>
+  <meta name="description" content="Python Karten: Symbole, Schlüsselwörter, Funktionen, Methoden und Begriffe als Quiz und Karteikarten fürs Handy.">
+  <meta name="theme-color" content="#2b5f8e" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101a26" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Python Karten">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- app.js sucht die Elemente über ihre Kennungen (id), die müssen bleiben. -->
+  <header class="kopf">
+    <div class="kopf-inhalt">
+      <img class="logo" src="icon.svg" alt="" width="44" height="44">
+      <div class="kopf-text">
+        <h1>Python <span>Karten</span></h1>
+        <p class="untertitel">Symbole, Wörter und Funktionen üben</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="laden">
+      <p class="mitte">Karten werden geladen …</p>
+    </section>
+
+    <!-- Start: Übersicht, Thema wählen, Quiz oder Karteikarten oder Nachschlagen -->
+    <section id="start" hidden>
+      <div class="box uebersicht">
+        <p class="uebersicht-zahl"><span id="gesamt-sicher">0</span> <span class="uebersicht-von">von <span id="gesamt-anzahl">0</span> Karten sicher</span></p>
+        <div class="balken" aria-hidden="true"><div id="gesamt-balken"></div></div>
+        <p class="leise">Sicher heißt: dreimal hintereinander richtig beantwortet.</p>
+      </div>
+
+      <h2 class="abschnitt" id="themen-titel">Thema</h2>
+      <div class="themen" id="themen" role="group" aria-labelledby="themen-titel"></div>
+
+      <button class="haupt" id="quiz-starten" type="button">Quiz starten</button>
+      <button class="neben" id="karten-starten" type="button">Karteikarten</button>
+      <button class="neben" id="nachschlagen-starten" type="button">Nachschlagen</button>
+
+      <details class="info">
+        <summary>Als App aufs Handy legen</summary>
+        <p><strong>Android:</strong> In Chrome oben rechts auf die drei Punkte tippen, dann „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p>
+        <p><strong>iPhone:</strong> In Safari unten auf das Teilen-Symbol tippen, dann „Zum Home-Bildschirm“.</p>
+        <p>Danach öffnet sich die App ohne Adressleiste und läuft auch ohne Netz. Dein Fortschritt bleibt auf diesem Gerät gespeichert.</p>
+      </details>
+
+      <div class="fuss">
+        <span id="stand-zeile"></span>
+        <button class="klein" id="zuruecksetzen" type="button">Fortschritt zurücksetzen</button>
+      </div>
+    </section>
+
+    <!-- Quiz: vier Antworten, danach Rückmeldung mit Beispiel -->
+    <section id="quiz" hidden>
+      <div class="kopfzeile">
+        <span id="quiz-fortschritt"></span>
+        <button class="klein" id="quiz-pause" type="button">Pause</button>
+      </div>
+      <div class="balken" aria-hidden="true"><div id="quiz-balken"></div></div>
+      <p class="kategorie" id="quiz-thema"></p>
+      <h2 class="frage" id="quiz-frage"></h2>
+      <p class="anzeige" id="quiz-anzeige"></p>
+      <div class="antworten" id="quiz-antworten"></div>
+      <div class="rueckmeldung" id="quiz-rueckmeldung" hidden>
+        <h3 id="quiz-titel" tabindex="-1"></h3>
+        <p class="loesung"><code id="quiz-loesung-begriff"></code> <span id="quiz-loesung-bedeutung"></span></p>
+        <pre class="beispiel" id="quiz-beispiel" hidden></pre>
+        <p class="hinweis" id="quiz-hinweis" hidden></p>
+        <button class="haupt" id="quiz-weiter" type="button">Weiter</button>
+      </div>
+    </section>
+
+    <!-- Karteikarten: erst die Vorderseite, nach dem Umdrehen die Bedeutung -->
+    <section id="karten" hidden>
+      <div class="kopfzeile">
+        <span id="karten-fortschritt"></span>
+        <button class="klein" id="karten-pause" type="button">Pause</button>
+      </div>
+      <div class="balken" aria-hidden="true"><div id="karten-balken"></div></div>
+      <div class="karteikarte" id="karteikarte">
+        <p class="kategorie" id="karte-thema"></p>
+        <p class="anzeige code" id="karte-vorne"></p>
+        <div id="karte-hinten" tabindex="-1" hidden>
+          <p class="karte-bedeutung" id="karte-bedeutung"></p>
+          <pre class="beispiel" id="karte-beispiel" hidden></pre>
+          <p class="hinweis" id="karte-hinweis" hidden></p>
+        </div>
+      </div>
+      <button class="haupt" id="karte-umdrehen" type="button">Antwort zeigen</button>
+      <div class="bewertung" id="karte-bewertung" hidden>
+        <button class="neben" id="karte-nochmal" type="button">Nochmal</button>
+        <button class="haupt" id="karte-gewusst" type="button">Gewusst</button>
+      </div>
+    </section>
+
+    <!-- Ergebnis nach einer Runde (Quiz und Karteikarten) -->
+    <section id="ergebnis" hidden>
+      <div class="box ergebnis-kopf">
+        <p class="kategorie" id="ergebnis-art"></p>
+        <p class="ergebnis-zahl" id="ergebnis-zahl" tabindex="-1"></p>
+        <p id="ergebnis-text"></p>
+      </div>
+      <h3 class="abschnitt" id="ergebnis-liste-titel" hidden>Das üben wir noch</h3>
+      <ul class="liste" id="ergebnis-liste"></ul>
+      <button class="haupt" id="ergebnis-nochmal" type="button">Noch eine Runde</button>
+      <button class="neben" id="ergebnis-start" type="button">Zurück zum Start</button>
+    </section>
+
+    <!-- Nachschlagen: alle Karten mit Suche -->
+    <section id="nachschlagen" hidden>
+      <div class="kopfzeile">
+        <button class="pille" id="nachschlagen-zurueck" type="button">Zurück zum Start</button>
+      </div>
+      <h2 class="abschnitt">Nachschlagen</h2>
+      <label class="feld" for="suche">Suchen</label>
+      <input class="eingabe" id="suche" type="search" placeholder="zum Beispiel split, Liste, Fehler" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label class="feld" for="suche-thema">Thema</label>
+      <select class="eingabe" id="suche-thema"></select>
+      <p class="leise" id="suche-info" aria-live="polite"></p>
+      <ul class="nachschlagen-liste" id="suche-liste"></ul>
+    </section>
+
+    <section id="fehler" hidden>
+      <h2>Die Karten lassen sich gerade nicht laden</h2>
+      <p>Bitte die Seite neu laden. Hilft das nicht, fehlt eine Datei der App (karten.js oder logik.js).</p>
+      <button class="haupt" id="neu-laden" type="button">Seite neu laden</button>
+    </section>
+  </main>
+
+  <noscript><p class="hinweis">Für Python Karten muss JavaScript eingeschaltet sein.</p></noscript>
+  <script src="karten.js" charset="utf-8"></script>
+  <script src="logik.js" charset="utf-8"></script>
+  <script src="app.js" charset="utf-8"></script>
+</body>
+</html>

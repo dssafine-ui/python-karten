@@ -1,0 +1,264 @@
+/* Python Karten: Aussehen. Handy zuerst, hell und dunkel folgen dem Gerät. */
+
+:root {
+  --bg: #f2f6fb;
+  --karte: #ffffff;
+  --text: #14202e;
+  --leise: #566579;
+  --rand: #d2dbe7;
+  --akzent: #2b6cb0;
+  --akzent-hell: #e4eefa;
+  --haupt-bg: #2b6cb0;
+  --haupt-text: #ffffff;
+  --haupt-schatten: #1d4a78;
+  --gelb: #ffd43b;
+  --ok: #156f36;
+  --ok-bg: #ddf4e5;
+  --ok-rand: #2e9b57;
+  --schlecht: #b3261e;
+  --schlecht-bg: #fde8e6;
+  --schlecht-rand: #d6453b;
+  --code-bg: #e9eff7;
+  --code-text: #10233a;
+  --fokus: #1b62e0;
+  --kopf-von: #3a7bbd;
+  --kopf-bis: #1d4a78;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", "Liberation Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1520;
+    --karte: #162130;
+    --text: #e7eef7;
+    --leise: #9cb0c6;
+    --rand: #2a394c;
+    --akzent: #6aaaf0;
+    --akzent-hell: #1b3050;
+    --haupt-bg: #5ba3ee;
+    --haupt-text: #07182b;
+    --haupt-schatten: #3b78b8;
+    --ok: #67d391;
+    --ok-bg: #123322;
+    --ok-rand: #3aa86a;
+    --schlecht: #ff9086;
+    --schlecht-bg: #3c1c19;
+    --schlecht-rand: #e0594d;
+    --code-bg: #0a111a;
+    --code-text: #dce8f6;
+    --fokus: #8cc0ff;
+    --kopf-von: #1f4f82;
+    --kopf-bis: #12263d;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--text);
+  background: var(--bg);
+  font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+button, input, select { font: inherit; color: inherit; }
+code, pre { font-family: var(--mono); }
+:focus-visible { outline: 3px solid var(--fokus); outline-offset: 2px; }
+
+/* ---------- Kopf ---------- */
+
+.kopf {
+  padding: max(0.9rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.9rem max(1rem, env(safe-area-inset-left));
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--kopf-von), var(--kopf-bis));
+}
+.kopf-inhalt { display: flex; align-items: center; gap: 0.8rem; max-width: 34rem; margin: 0 auto; }
+.logo { flex: none; width: 44px; height: 44px; border-radius: 11px; }
+.kopf h1 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: 0.01em; }
+.kopf h1 span { color: var(--gelb); }
+.untertitel { margin: 0.15rem 0 0; font-size: 0.9rem; opacity: 0.9; }
+
+main {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1rem max(1rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+
+.mitte { text-align: center; color: var(--leise); }
+.leise { color: var(--leise); font-size: 0.9rem; }
+
+/* ---------- Start ---------- */
+
+.box { padding: 1rem; background: var(--karte); border: 1px solid var(--rand); border-radius: 16px; }
+.uebersicht-zahl { margin: 0 0 0.6rem; font-size: 1.1rem; }
+#gesamt-sicher { font-size: 2.2rem; font-weight: 800; line-height: 1; color: var(--akzent); }
+.uebersicht-von { color: var(--leise); }
+.uebersicht .leise { margin: 0.6rem 0 0; }
+
+.balken { height: 10px; overflow: hidden; background: var(--code-bg); border-radius: 999px; }
+.balken > div { width: 0; height: 100%; background: var(--akzent); border-radius: 999px; transition: width 0.3s ease; }
+
+.abschnitt { margin: 1.4rem 0 0.6rem; font-size: 0.95rem; color: var(--leise); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.themen { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.2rem; }
+.thema {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 4.4rem;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  background: var(--karte);
+  border: 2px solid var(--rand);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.thema:first-child { grid-column: 1 / -1; }
+.thema[aria-pressed="true"] { background: var(--akzent-hell); border-color: var(--akzent); }
+.thema-name { font-weight: 700; }
+.thema-zahl { font-size: 0.82rem; color: var(--leise); }
+.mini-balken { display: block; height: 6px; margin-top: auto; overflow: hidden; background: var(--code-bg); border-radius: 999px; }
+.mini-balken > span { display: block; height: 100%; background: var(--akzent); border-radius: 999px; }
+
+.haupt, .neben {
+  display: block;
+  width: 100%;
+  min-height: 3.3rem;
+  margin-top: 0.7rem;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 14px;
+  cursor: pointer;
+}
+.haupt { color: var(--haupt-text); background: var(--haupt-bg); border: 0; box-shadow: 0 3px 0 var(--haupt-schatten); }
+.haupt:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--haupt-schatten); }
+.neben { color: var(--akzent); background: transparent; border: 2px solid var(--akzent); }
+.klein { padding: 0.35rem 0.7rem; font-size: 0.9rem; color: var(--leise); background: transparent; border: 1px solid var(--rand); border-radius: 999px; cursor: pointer; }
+.pille { padding: 0.45rem 0.9rem; font-size: 0.95rem; font-weight: 600; color: var(--akzent); background: var(--akzent-hell); border: 0; border-radius: 999px; cursor: pointer; }
+
+.info { margin-top: 1.4rem; padding: 0.7rem 1rem; background: var(--karte); border: 1px solid var(--rand); border-radius: 14px; }
+.info summary { cursor: pointer; font-weight: 600; }
+.info p { margin: 0.6rem 0 0; font-size: 0.95rem; }
+
+.fuss { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.4rem; font-size: 0.85rem; color: var(--leise); }
+
+/* ---------- Quiz und Karteikarten ---------- */
+
+.kopfzeile { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.6rem; font-weight: 700; }
+
+.kategorie { margin: 1rem 0 0.2rem; font-size: 0.8rem; font-weight: 700; color: var(--leise); text-transform: uppercase; letter-spacing: 0.06em; }
+.frage { margin: 0 0 0.7rem; font-size: 1.15rem; line-height: 1.3; }
+
+.anzeige {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  background: var(--code-bg);
+  border-radius: 14px;
+}
+.anzeige.code { font-family: var(--mono); font-size: clamp(1.5rem, 7vw, 2.2rem); font-weight: 700; color: var(--code-text); }
+.anzeige.text { font-size: 1.3rem; font-weight: 600; line-height: 1.35; }
+
+.antworten { display: flex; flex-direction: column; gap: 0.6rem; }
+.antwort {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  background: var(--karte);
+  border: 2px solid var(--rand);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.antwort .buchstabe {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--leise);
+  border: 2px solid var(--rand);
+  border-radius: 50%;
+}
+.antwort-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.antwort.code .antwort-text { font-family: var(--mono); font-size: 1rem; }
+@media (hover: hover) {
+  .antwort:not(.gesperrt):hover { background: var(--akzent-hell); border-color: var(--akzent); }
+}
+.antwort.gesperrt { cursor: default; }
+.antwort.richtig { color: var(--ok); background: var(--ok-bg); border-color: var(--ok-rand); }
+.antwort.falsch { color: var(--schlecht); background: var(--schlecht-bg); border-color: var(--schlecht-rand); }
+.antwort.blass { opacity: 0.55; }
+.antwort.richtig .buchstabe { color: var(--ok); border-color: var(--ok-rand); }
+.antwort.falsch .buchstabe { color: var(--schlecht); border-color: var(--schlecht-rand); }
+
+.rueckmeldung { margin-top: 1rem; padding: 1rem; background: var(--karte); border: 1px solid var(--rand); border-left: 6px solid var(--rand); border-radius: 14px; }
+.rueckmeldung[data-ergebnis="richtig"] { border-left-color: var(--ok-rand); }
+.rueckmeldung[data-ergebnis="falsch"] { border-left-color: var(--schlecht-rand); }
+.rueckmeldung h3 { margin: 0 0 0.5rem; font-size: 1.2rem; outline: none; }
+.rueckmeldung[data-ergebnis="richtig"] h3 { color: var(--ok); }
+.rueckmeldung[data-ergebnis="falsch"] h3 { color: var(--schlecht); }
+.loesung { margin: 0 0 0.6rem; overflow-wrap: anywhere; }
+.loesung code { padding: 0.1rem 0.4rem; font-weight: 700; background: var(--code-bg); border-radius: 6px; }
+
+.beispiel {
+  margin: 0.6rem 0;
+  padding: 0.7rem 0.8rem;
+  overflow-x: auto;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--code-text);
+  background: var(--code-bg);
+  border-radius: 10px;
+  tab-size: 4;
+}
+.hinweis { margin: 0.6rem 0; font-size: 0.95rem; color: var(--leise); }
+
+.karteikarte { margin-top: 0.8rem; min-height: 15rem; padding: 1rem; background: var(--karte); border: 2px solid var(--rand); border-radius: 18px; cursor: pointer; }
+.karteikarte .anzeige { margin-top: 0.6rem; }
+.karte-bedeutung { margin: 0.4rem 0 0; font-size: 1.15rem; font-weight: 600; }
+#karte-hinten { outline: none; }
+.bewertung { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+
+/* ---------- Ergebnis ---------- */
+
+.ergebnis-kopf { text-align: center; }
+.ergebnis-zahl { margin: 0.2rem 0 0.4rem; font-size: 2.2rem; font-weight: 800; color: var(--akzent); outline: none; }
+.ergebnis-kopf p:last-child { margin-bottom: 0; }
+
+.liste { margin: 0; padding: 0; list-style: none; }
+.liste li { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.5rem; padding: 0.6rem 0.8rem; background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
+.liste code { font-weight: 700; overflow-wrap: anywhere; }
+.liste span { font-size: 0.95rem; color: var(--leise); }
+
+/* ---------- Nachschlagen ---------- */
+
+.feld { display: block; margin: 0.8rem 0 0.25rem; font-size: 0.85rem; font-weight: 700; color: var(--leise); }
+.eingabe { display: block; width: 100%; min-height: 3rem; padding: 0.55rem 0.8rem; background: var(--karte); border: 2px solid var(--rand); border-radius: 12px; }
+
+.nachschlagen-liste { margin: 0.4rem 0 0; padding: 0; list-style: none; }
+.nachschlagen-liste li { margin-bottom: 0.5rem; }
+.nachschlagen-karte { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
+.nachschlagen-karte summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.7rem; padding: 0.65rem 0.8rem; cursor: pointer; list-style: none; }
+.nachschlagen-karte summary::-webkit-details-marker { display: none; }
+.nachschlagen-begriff { font-weight: 700; overflow-wrap: anywhere; }
+.nachschlagen-bedeutung { flex: 1 1 12rem; font-size: 0.95rem; color: var(--leise); }
+.nachschlagen-inhalt { padding: 0 0.8rem 0.8rem; }
+.nachschlagen-inhalt .kategorie { margin: 0.4rem 0 0; }
+.marke { padding: 0.05rem 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--ok); background: var(--ok-bg); border-radius: 999px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
