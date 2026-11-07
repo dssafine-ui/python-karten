@@ -440,8 +440,13 @@
       pruefe(text('gesamt-anzahl') === String(KARTEN.length), 'Start: Gesamtzahl der Karten', text('gesamt-anzahl'));
       pruefe(text('gesamt-sicher') === '5', 'Start: der vorbereitete Stand (5 sichere Karten) wird geladen', text('gesamt-sicher'));
       pruefe(/^5 von \d+ sicher$/.test(themaKnopf('Symbole').querySelector('.thema-zahl').textContent), 'Start: Themenknopf zeigt "5 von … sicher"', themaKnopf('Symbole').querySelector('.thema-zahl').textContent);
-      pruefe(text('tab-name') === 'start.py' && doc.body.getAttribute('data-ansicht') === 'start' && text('status-karten') === 'sicher : 5 / ' + KARTEN.length,
-        'Oberfläche: Tab "start.py" und Statusleiste "sicher : 5 / ' + KARTEN.length + '"', text('tab-name') + ' | ' + text('status-karten'));
+      pruefe(text('tab-name') === 'start.txt' && doc.body.getAttribute('data-ansicht') === 'start' && text('status-karten') === 'sicher : 5 / ' + KARTEN.length,
+        'Oberfläche: Tab "start.txt" und Statusleiste "sicher : 5 / ' + KARTEN.length + '"', text('tab-name') + ' | ' + text('status-karten'));
+      const rinneAnzahl = knoepfe('#rinne span').length;
+      pruefe(rinneAnzahl >= 10 && text('rinne').indexOf('1') === 0 && knoepfe('#rinne span')[rinneAnzahl - 1].textContent === String(rinneAnzahl),
+        'Zeilenstreifen: jede Zeile bis unten hat eine Nummer, ohne Lücke', String(rinneAnzahl));
+      pruefe(knoepfe('.tab').length === 4 && knoepfe('.tab[aria-current="page"]').length === 1 && doc.getElementById('tab-start').getAttribute('aria-current') === 'page',
+        'Tabs: vier Tabs, genau einer ist aktiv (start.txt)', String(knoepfe('.tab').length));
       speicher.removeItem(TEST_KEY);
       await rahmenLaden('index.html?test=1');
       rahmenUebernehmen();
@@ -456,7 +461,7 @@
       // Quiz
       el('quiz-starten').click();
       await bis(() => sichtbar('quiz'), 'das Quiz');
-      pruefe(text('tab-name') === 'quiz.py' && doc.body.getAttribute('data-ansicht') === 'quiz', 'Oberfläche: im Quiz heißt der Tab "quiz.py"', text('tab-name'));
+      pruefe(text('tab-name') === 'quiz.txt' && doc.body.getAttribute('data-ansicht') === 'quiz', 'Oberfläche: im Quiz heißt der Tab "quiz.txt"', text('tab-name'));
       pruefe(text('quiz-fortschritt') === 'Frage 1 von 10', 'Quiz: erste Frage "Frage 1 von 10"', text('quiz-fortschritt'));
       pruefe(knoepfe('#quiz-antworten .antwort').length === 4, 'Quiz: vier Antworten', knoepfe('#quiz-antworten .antwort').length);
       pruefe(text('quiz-thema').indexOf('Symbole') === 0 && text('quiz-frage').length > 5 && text('quiz-anzeige').length > 0, 'Quiz: Thema, Frage und Anzeige sind gefüllt');
@@ -571,8 +576,14 @@
       const quizOffen = text('quiz-fortschritt');
       el('menue-datei').click();
       await bis(() => sichtbar('start'), 'Start nach dem Quiz über das Menü');
-      pruefe(tabSuchen === 'nachschlagen.py' && quizOffen === 'Frage 1 von 10',
+      pruefe(tabSuchen === 'suche.txt' && quizOffen === 'Frage 1 von 10',
         'Menü: Suchen öffnet Nachschlagen, Datei führt zum Start, Ausführen startet ein Quiz', tabSuchen + ' | ' + quizOffen);
+      el('tab-karten').click();
+      await bis(() => sichtbar('karten'), 'Karteikarten über den Tab');
+      const tabKarten = doc.getElementById('tab-karten').getAttribute('aria-current') === 'page' && doc.getElementById('tab-karten').dataset.lauf === 'ja';
+      el('tab-start').click();
+      await bis(() => sichtbar('start'), 'Start über den Tab');
+      pruefe(tabKarten, 'Tabs: ein Tipp öffnet die Karteikarten, der Tab ist aktiv und die Diskette rot');
 
       const wurzel = doc.documentElement;
       el('design-knopf').click();

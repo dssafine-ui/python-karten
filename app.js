@@ -3,18 +3,20 @@
 (function () {
   'use strict';
 
-  const APP_STAND = '06.11.2026';
+  const APP_STAND = '07.11.2026';
   const ANSICHTEN = ['laden', 'start', 'quiz', 'karten', 'ergebnis', 'nachschlagen', 'fehler'];
-  // Name der "Datei" im Tab oben. Er zeigt, auf welcher Ansicht du gerade bist (wie im Editor).
+  // Vier Tabs oben wie offene Dateien. Jede Ansicht gehört zu einem Tab (das Ergebnis zum Quiz oder zu den Karteikarten).
   const TAB_NAMEN = {
-    laden: 'laden.py',
-    start: 'start.py',
-    quiz: 'quiz.py',
-    karten: 'karteikarten.py',
-    ergebnis: 'ergebnis.py',
-    nachschlagen: 'nachschlagen.py',
-    fehler: 'fehler.py'
+    laden: 'start.txt',
+    start: 'start.txt',
+    quiz: 'quiz.txt',
+    karten: 'karten.txt',
+    ergebnis: 'quiz.txt',
+    nachschlagen: 'suche.txt',
+    fehler: 'start.txt'
   };
+  const TAB_VON_ANSICHT = { laden: 'start', start: 'start', quiz: 'quiz', karten: 'karten', ergebnis: 'quiz', nachschlagen: 'suche', fehler: 'start' };
+  const ZEILE = 22; // Rasterhöhe in px, wie --zeile in style.css
   // Tasten fürs Quiz am Rechner: 1 bis 4 oder A bis D
   const TASTEN = { '1': 0, '2': 1, '3': 2, '4': 3, a: 0, b: 1, c: 2, d: 3 };
 
@@ -28,8 +30,43 @@
     // Das Aussehen hängt an der Ansicht (zum Beispiel zeigt nur der Start die Titelzeilen), und der Tab nennt sie wie eine Datei.
     document.body.setAttribute('data-ansicht', ansicht);
     const tab = $('tab-name');
-    if (tab) tab.textContent = TAB_NAMEN[ansicht] || 'python-karten.py';
+    if (tab) tab.textContent = TAB_NAMEN[ansicht] || 'start.txt';
+    tabsAktualisieren(ansicht);
     window.scrollTo(0, 0);
+    rinneAktualisieren();
+  }
+
+  // Der Tab der aktuellen Ansicht ist hervorgehoben; die Diskette ist rot, solange eine Runde läuft (wie bei ungespeicherten Änderungen).
+  function tabsAktualisieren(ansicht) {
+    const aktiv = TAB_VON_ANSICHT[ansicht] || 'start';
+    document.querySelectorAll('.tab').forEach((tab) => {
+      if (tab.dataset.tab === aktiv) tab.setAttribute('aria-current', 'page');
+      else tab.removeAttribute('aria-current');
+      const lauf = (tab.dataset.tab === 'quiz' && ansicht === 'quiz') || (tab.dataset.tab === 'karten' && ansicht === 'karten');
+      tab.dataset.lauf = lauf ? 'ja' : 'nein';
+    });
+  }
+
+  // Zeilenstreifen: eine Nummer für jede Rasterzeile bis zum unteren Rand, auch für leere Zeilen und Umbrüche.
+  // Dazu die Zeile des Cursors für die Statusleiste (Ln : n  Col : 1).
+  function rinneAktualisieren() {
+    const rinne = $('rinne');
+    const haupt = document.querySelector('main');
+    if (!rinne || !haupt) return;
+    const anzahl = Math.max(1, Math.ceil(haupt.offsetHeight / ZEILE));
+    if (rinne.childNodes.length !== anzahl) {
+      const teile = document.createDocumentFragment();
+      for (let i = 1; i <= anzahl; i += 1) teile.appendChild(el('span', '', String(i)));
+      rinne.textContent = '';
+      rinne.appendChild(teile);
+    }
+    const pos = $('status-pos');
+    if (pos) {
+      const ziel = haupt.querySelector('section:not([hidden]) .anzeige:not([hidden]), section:not([hidden]) .thema[aria-pressed="true"]');
+      let zeile = 1;
+      if (ziel) zeile = Math.max(1, Math.round((ziel.getBoundingClientRect().top - haupt.getBoundingClientRect().top) / ZEILE) + 1);
+      pos.textContent = 'Ln : ' + zeile + '  Col : 1';
+    }
   }
 
   const PK = window.PK;
@@ -314,6 +351,13 @@
     balkenSetzen('quiz-balken', quiz.position + 1, quiz.liste.length);
     const box = $('quiz-rueckmeldung');
     box.dataset.ergebnis = richtig ? 'richtig' : 'falsch';
+    // Ausgabe wie in der Python-Konsole: erst der Vergleich, dann das Ergebnis
+    const konsole = $('quiz-konsole');
+    if (konsole) {
+      konsole.textContent = '';
+      konsole.appendChild(el('div', 'eingabe-zeile', 'wahl == richtig'));
+      konsole.appendChild(el('div', richtig ? 'wahr' : 'wahr falsch-wert', richtig ? 'True' : 'False'));
+    }
     $('quiz-titel').textContent = richtig ? 'Richtig!' : 'Nicht ganz.';
     $('quiz-loesung-begriff').textContent = karte.begriff;
     $('quiz-loesung-bedeutung').textContent = karte.bedeutung;
@@ -526,6 +570,24 @@
   wennDa('menue-ansicht', designWechseln);
   wennDa('menue-ausfuehren', quizStarten);
   wennDa('design-knopf', designWechseln);
+  // Die Tabs sind die Navigation. Ein Tipp auf den Tab, auf dem man schon ist, tut nichts (sonst finge eine Runde von vorn an).
+  function tabTipp(name, tat) {
+    wennDa('tab-' + name, () => {
+      if (TAB_VON_ANSICHT[document.body.getAttribute('data-ansicht')] === name) return;
+      tat();
+    });
+  }
+  tabTipp('start', startZeigen);
+  tabTipp('quiz', quizStarten);
+  tabTipp('karten', kartenStarten);
+  tabTipp('suche', nachschlagenZeigen);
+
+  // Der Zeilenstreifen folgt der Höhe der Seite (Umbruch, andere Schrift, gedrehtes Handy)
+  if (window.ResizeObserver) {
+    new ResizeObserver(rinneAktualisieren).observe(document.querySelector('main'));
+  }
+  window.addEventListener('resize', rinneAktualisieren);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(rinneAktualisieren);
 
   // Am Rechner: im Quiz mit 1 bis 4 oder A bis D antworten, mit Enter weiter.
   document.addEventListener('keydown', (ereignis) => {

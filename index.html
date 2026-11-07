@@ -39,19 +39,35 @@
         <button class="menue-punkt" id="menue-ansicht" type="button" aria-label="Ansicht, Design wechseln" title="Design wechseln: Auto, Hell, Dunkel">Ansicht</button>
         <button class="menue-punkt" id="menue-ausfuehren" type="button" aria-label="Ausführen, Quiz starten" title="Quiz starten">Ausführen</button>
       </nav>
-      <!-- Tab mit dem Namen der aktuellen Ansicht, nur zum Anschauen -->
-      <div class="tabs" aria-hidden="true">
-        <span class="tab">
-          <svg class="tab-disk" viewBox="0 0 16 16" width="14" height="14" focusable="false">
-            <rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#2f6fd0"/>
-            <rect x="3.5" y="0.5" width="8" height="5" fill="#e8eefb"/>
-            <rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#2f6fd0"/>
-            <rect x="3" y="8.5" width="10" height="7" rx="1" fill="#f6f8fd"/>
-          </svg>
-          <span id="tab-name">start.py</span>
-          <span class="tab-x">×</span>
-        </span>
-      </div>
+      <!-- Vier Tabs wie offene Dateien: sie sind die Navigation. Der Tab der aktuellen Ansicht ist hervorgehoben,
+           die Diskette ist rot, solange eine Runde läuft. #tab-name nennt die aktuelle Datei (für Vorleseprogramme). -->
+      <nav class="tabs" aria-label="Dateien">
+        <button class="tab" id="tab-start" data-tab="start" type="button">
+          <svg class="tab-disk" viewBox="0 0 16 16" width="13" height="13" focusable="false" aria-hidden="true">
+            <g class="blau"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#2f6fd0"/><rect x="3.5" y="0.5" width="8" height="5" fill="#e8eefb"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#2f6fd0"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#f6f8fd"/></g>
+            <g class="rot"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#d13b32"/><rect x="3.5" y="0.5" width="8" height="5" fill="#fbe9e7"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#d13b32"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#fdf6f5"/></g>
+          </svg>start.txt<span class="tab-x" aria-hidden="true">×</span>
+        </button>
+        <button class="tab" id="tab-quiz" data-tab="quiz" type="button">
+          <svg class="tab-disk" viewBox="0 0 16 16" width="13" height="13" focusable="false" aria-hidden="true">
+            <g class="blau"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#2f6fd0"/><rect x="3.5" y="0.5" width="8" height="5" fill="#e8eefb"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#2f6fd0"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#f6f8fd"/></g>
+            <g class="rot"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#d13b32"/><rect x="3.5" y="0.5" width="8" height="5" fill="#fbe9e7"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#d13b32"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#fdf6f5"/></g>
+          </svg>quiz.txt<span class="tab-x" aria-hidden="true">×</span>
+        </button>
+        <button class="tab" id="tab-karten" data-tab="karten" type="button">
+          <svg class="tab-disk" viewBox="0 0 16 16" width="13" height="13" focusable="false" aria-hidden="true">
+            <g class="blau"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#2f6fd0"/><rect x="3.5" y="0.5" width="8" height="5" fill="#e8eefb"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#2f6fd0"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#f6f8fd"/></g>
+            <g class="rot"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#d13b32"/><rect x="3.5" y="0.5" width="8" height="5" fill="#fbe9e7"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#d13b32"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#fdf6f5"/></g>
+          </svg>karten.txt<span class="tab-x" aria-hidden="true">×</span>
+        </button>
+        <button class="tab" id="tab-suche" data-tab="suche" type="button">
+          <svg class="tab-disk" viewBox="0 0 16 16" width="13" height="13" focusable="false" aria-hidden="true">
+            <g class="blau"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#2f6fd0"/><rect x="3.5" y="0.5" width="8" height="5" fill="#e8eefb"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#2f6fd0"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#f6f8fd"/></g>
+            <g class="rot"><rect x="0.5" y="0.5" width="15" height="15" rx="2" fill="#d13b32"/><rect x="3.5" y="0.5" width="8" height="5" fill="#fbe9e7"/><rect x="8.6" y="1.4" width="1.8" height="3.2" fill="#d13b32"/><rect x="3" y="8.5" width="10" height="7" rx="1" fill="#fdf6f5"/></g>
+          </svg>suche.txt<span class="tab-x" aria-hidden="true">×</span>
+        </button>
+      </nav>
+      <span class="nur-vorlesen" id="tab-name" aria-live="polite">start.txt</span>
     </header>
 
     <!-- Die ersten beiden Zeilen der "Datei": nur auf dem Start sichtbar -->
@@ -61,6 +77,8 @@
     </div>
 
     <main>
+      <!-- Zeilenstreifen: app.js schreibt eine Nummer je Zeile hinein (rein zur Zierde) -->
+      <div id="rinne" aria-hidden="true"></div>
       <section id="laden">
         <p class="mitte">Karten werden geladen …</p>
       </section>
@@ -105,6 +123,7 @@
         <p class="anzeige" id="quiz-anzeige"></p>
         <div class="antworten" id="quiz-antworten"></div>
         <div class="rueckmeldung" id="quiz-rueckmeldung" hidden>
+          <div class="konsole" id="quiz-konsole" aria-hidden="true"></div>
           <h3 id="quiz-titel" tabindex="-1"></h3>
           <p class="loesung"><code id="quiz-loesung-begriff"></code> <span id="quiz-loesung-bedeutung"></span></p>
           <pre class="beispiel" id="quiz-beispiel" hidden></pre>
@@ -172,7 +191,8 @@
 
     <!-- Statusleiste wie im Editor -->
     <div class="statuszeile">
-      <span class="status-feld" aria-hidden="true">Python file</span>
+      <span class="status-feld" aria-hidden="true">Normal text file</span>
+      <span class="status-feld" id="status-pos" aria-hidden="true">Ln : 1  Col : 1</span>
       <span class="status-feld status-breit" id="status-karten"></span>
       <span class="status-feld status-utf" aria-hidden="true">UTF-8</span>
       <button class="status-knopf" id="design-knopf" type="button">Design : Auto</button>
